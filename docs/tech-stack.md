@@ -43,6 +43,20 @@
 | pyxlsb | xlsb形式読み込み |
 | msoffcrypto-tool | パスワード付きExcel復号 |
 
+## 帳票出力用（導入予定）
+
+| 技術 | バージョン | 用途 | 採用理由 |
+|------|-----------|------|---------|
+| openpyxl | 3.x（導入済み） | Excel帳票生成 | Import用で導入済み。書き込みにも対応 |
+| pandas | 3.x（導入済み） | CSV帳票生成 | Import用で導入済み。to_csvで出力 |
+| WeasyPrint or reportlab | 未定 | PDF帳票生成 | MVP時に選定。WeasyPrint: HTML/CSSベース、reportlab: Pythonコードベース |
+
+PDF生成ライブラリはMVP実装開始時に選定する。選定基準:
+- 日本語フォント対応
+- テーブルレイアウトの柔軟性
+- ヘッダ・フッタ・ページ番号対応
+- 依存の軽さ
+
 ## パッケージ管理
 
 | 対象 | ツール | lockファイル | 仮想環境 |

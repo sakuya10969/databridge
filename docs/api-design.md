@@ -5,6 +5,9 @@
 - ベースパス: `/api/v1`
 - レスポンス形式: JSON
 - 認証: MVP時点では未実装
+- Import系: `/api/v1/jobs`, `/api/v1/templates`
+- Report系: `/api/v1/report-templates`, `/api/v1/report-jobs`
+- 共通: `/api/v1/audit-logs`
 
 ### 成功レスポンス
 
@@ -31,18 +34,23 @@
 
 ### エラーコード一覧
 
-| コード | HTTPステータス | 説明 |
-|--------|--------------|------|
-| NOT_FOUND | 404 | リソースが存在しない |
-| INVALID_STATUS | 409 | 不正なステータス遷移 |
-| PARSE_ERROR | 422 | ファイルパース失敗 |
-| VALIDATION_FAILED | 422 | バリデーション失敗 |
-| IMPORT_ERROR | 500 | DB取り込み失敗 |
-| INTERNAL_ERROR | 500 | 予期しないエラー |
+| コード | HTTPステータス | 説明 | 対象 |
+|--------|--------------|------|------|
+| NOT_FOUND | 404 | リソースが存在しない | 共通 |
+| INVALID_STATUS | 409 | 不正なステータス遷移 | 共通 |
+| PARSE_ERROR | 422 | ファイルパース失敗 | Import |
+| VALIDATION_FAILED | 422 | バリデーション失敗 | Import |
+| IMPORT_ERROR | 500 | DB取り込み失敗 | Import |
+| REPORT_GENERATION_ERROR | 500 | 帳票生成失敗 | Report |
+| REPORT_OUTPUT_NOT_FOUND | 404 | 帳票出力ファイルが存在しない | Report |
+| INVALID_FILTER | 422 | フィルタ条件が不正 | Report |
+| INTERNAL_ERROR | 500 | 予期しないエラー | 共通 |
 
 ---
 
-## ジョブ API
+## A. Import系 API
+
+### ジョブ API
 
 ### POST /api/v1/jobs/upload
 
@@ -216,7 +224,7 @@
 
 ---
 
-## テンプレート API
+## Import用テンプレート API
 
 ### GET /api/v1/templates
 
@@ -251,7 +259,246 @@
 
 ---
 
-## 監査ログ API
+## B. Report系 API
+
+### 帳票テンプレート API
+
+### POST /api/v1/report-templates
+
+帳票テンプレート作成。
+
+- リクエスト:
+```json
+{
+  "name": "取り込みジョブ一覧レポート",
+  "description": "全取り込みジョブの一覧帳票",
+  "report_type": "list",
+  "default_output_format": "pdf",
+  "target_resource_type": "import_jobs",
+  "layout_definition": {
+    "title": "取り込みジョブ一覧",
+    "page_size": "A4",
+    "orientation": "landscape",
+    "header": { "show": true, "text": "業務データ取り込み基盤 — ジョブ一覧レポート" },
+    "footer": { "show": true, "text": "ページ {page} / {total_pages}" }
+  },
+  "fields": [
+    {
+      "field_key": "file_name",
+      "label": "ファイル名",
+      "source_path": "file_name",
+      "display_order": 1,
+      "format_type": "string",
+      "is_required": true
+    },
+    {
+      "field_key": "status",
+      "label": "ステータス",
+      "source_path": "status",
+      "display_order": 2,
+      "format_type": "string",
+      "is_required": true
+    },
+    {
+      "field_key": "created_at",
+      "label": "作成日時",
+      "source_path": "created_at",
+      "display_order": 3,
+      "format_type": "datetime",
+      "format_pattern": "YYYY-MM-DD HH:mm",
+      "is_required": true
+    }
+  ]
+}
+```
+
+- レスポンス:
+```json
+{
+  "data": {
+    "id": "uuid",
+    "name": "取り込みジョブ一覧レポート",
+    "report_type": "list",
+    "default_output_format": "pdf",
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### GET /api/v1/report-templates
+
+帳票テンプレート一覧取得。
+
+- クエリパラメータ:
+  - `page`: ページ番号（default: 1）
+  - `per_page`: 1ページあたり件数（default: 20）
+  - `report_type`: 帳票種別フィルタ（optional: list/single/summary）
+- レスポンス: テンプレート一覧 + meta
+
+### GET /api/v1/report-templates/{template_id}
+
+帳票テンプレート詳細取得。フィールド定義を含む。
+
+- レスポンス:
+```json
+{
+  "data": {
+    "id": "uuid",
+    "name": "取り込みジョブ一覧レポート",
+    "description": "全取り込みジョブの一覧帳票",
+    "report_type": "list",
+    "default_output_format": "pdf",
+    "target_resource_type": "import_jobs",
+    "layout_definition": { ... },
+    "fields": [
+      {
+        "id": "uuid",
+        "field_key": "file_name",
+        "label": "ファイル名",
+        "source_path": "file_name",
+        "display_order": 1,
+        "format_type": "string",
+        "is_required": true,
+        "default_value": null,
+        "width": null,
+        "aggregation": null
+      }
+    ],
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### PUT /api/v1/report-templates/{template_id}
+
+帳票テンプレート更新。
+
+- リクエスト: POST と同一構造（部分更新可）
+- レスポンス: 更新後のテンプレート
+
+### DELETE /api/v1/report-templates/{template_id}
+
+帳票テンプレート削除。出力ジョブが存在する場合は論理削除（is_active = false）。
+
+- レスポンス: 204 No Content
+
+---
+
+### 帳票出力ジョブ API
+
+### POST /api/v1/report-jobs
+
+帳票出力ジョブ作成。非同期でジョブを作成し、生成処理を開始する。
+
+- リクエスト:
+```json
+{
+  "report_template_id": "uuid",
+  "output_format": "pdf",
+  "requested_by": "田中太郎",
+  "filter_conditions": {
+    "filters": [
+      { "field": "status", "operator": "eq", "value": "completed" },
+      { "field": "created_at", "operator": "gte", "value": "2025-01-01T00:00:00Z" }
+    ],
+    "sort": [
+      { "field": "created_at", "direction": "desc" }
+    ]
+  }
+}
+```
+
+- レスポンス:
+```json
+{
+  "data": {
+    "id": "uuid",
+    "report_template_id": "uuid",
+    "status": "pending",
+    "output_format": "pdf",
+    "requested_by": "田中太郎",
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### GET /api/v1/report-jobs
+
+帳票出力ジョブ一覧取得。
+
+- クエリパラメータ:
+  - `page`: ページ番号（default: 1）
+  - `per_page`: 1ページあたり件数（default: 20）
+  - `status`: ステータスフィルタ（optional: pending/generating/completed/failed）
+  - `report_template_id`: テンプレートIDフィルタ（optional）
+- レスポンス: ジョブ一覧 + meta
+
+### GET /api/v1/report-jobs/{job_id}
+
+帳票出力ジョブ詳細取得。出力ファイル情報を含む。
+
+- レスポンス:
+```json
+{
+  "data": {
+    "id": "uuid",
+    "report_template_id": "uuid",
+    "report_template_name": "取り込みジョブ一覧レポート",
+    "status": "completed",
+    "output_format": "pdf",
+    "filter_conditions": { ... },
+    "row_count": 150,
+    "requested_by": "田中太郎",
+    "error_message": null,
+    "started_at": "2025-01-01T00:00:01Z",
+    "completed_at": "2025-01-01T00:00:05Z",
+    "created_at": "2025-01-01T00:00:00Z",
+    "outputs": [
+      {
+        "id": "uuid",
+        "file_name": "import_jobs_report_20250101.pdf",
+        "mime_type": "application/pdf",
+        "file_size": 102400,
+        "checksum": "sha256:...",
+        "created_at": "2025-01-01T00:00:05Z"
+      }
+    ]
+  }
+}
+```
+
+### GET /api/v1/report-jobs/{job_id}/download
+
+帳票ファイルダウンロード。最新の出力ファイルをストリーミングで返す。
+
+- レスポンス: バイナリストリーム
+  - Content-Type: 出力形式に応じたMIMEタイプ
+  - Content-Disposition: `attachment; filename="..."`
+- エラー: ジョブが未完了またはファイルが存在しない場合は404
+
+### POST /api/v1/report-jobs/{job_id}/retry
+
+失敗した帳票出力ジョブの再実行。同一テンプレート・同一条件で再実行する。
+
+- レスポンス:
+```json
+{
+  "data": {
+    "id": "uuid",
+    "status": "pending",
+    "output_format": "pdf",
+    "requested_by": "田中太郎",
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+---
+
+## C. 共通 API
+
+### 監査ログ API
 
 ### GET /api/v1/audit-logs
 

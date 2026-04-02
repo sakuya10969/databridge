@@ -3,16 +3,33 @@
 ## 全体構成
 
 ```
-┌─────────────────┐     HTTP/REST     ┌─────────────────┐
-│   client (React  │ ◄──────────────► │  server (FastAPI) │
-│   Router SSR)    │   /api/v1/*      │                   │
-└─────────────────┘                   └────────┬──────────┘
+┌─────────────────┐     HTTP/REST     ┌─────────────────────┐
+│   client (React  │ ◄──────────────► │  server (FastAPI)     │
+│   Router SSR)    │   /api/v1/*      │                       │
+└─────────────────┘                   └────────┬──────────────┘
                                                │
                                       ┌────────▼──────────┐
                                       │   PostgreSQL       │
                                       │  (staging + 本番)   │
+                                      └──────────┬────────┘
+                                                 │
+                                      ┌──────────▼────────┐
+                                      │   ファイルストレージ  │
+                                      │  (upload + report)  │
                                       └───────────────────┘
 ```
+
+## 責務分離: Import と Report
+
+本システムは2つの独立した責務を持つ。
+
+- **Import（取り込み）**: 外部ファイル → 内部DB。パース・バリデーション・staging経由の安全な投入
+- **Report（帳票出力）**: 内部DB → 外部ファイル。データ抽出・帳票生成・ファイル保存
+
+両者は独立したサブドメインとして設計し、共有するのはAuditLog（監査ログ）のみとする。
+Import用テンプレート（templates）とReport用テンプレート（report_templates）は完全に別概念である。
+
+各サブドメインは同一のクリーンアーキテクチャ4層構成に従い、domain層のインターフェースを共有しない。
 
 ## フロントエンド: FSD（Feature-Sliced Design）変則構成
 
@@ -98,29 +115,45 @@ presentation → application → domain ← infrastructure
 
 #### domain（最内層・依存なし）
 
-- エンティティ定義（ImportJob, ColumnMapping, Template, ImportError, AuditLog）
-- ステータスenum
-- リポジトリインターフェース（ABC）: `IJobRepository`, `ITemplateRepository`, `IErrorRepository`, `IAuditRepository`
+- エンティティ定義
+  - Import系: ImportJob, ColumnMapping, Template, ImportError
+  - Report系: ReportTemplate, ReportTemplateField, ReportJob, ReportOutput
+  - 共通: AuditLog
+- ステータスenum（ImportJobStatus, ReportJobStatus）
+- リポジトリインターフェース（ABC）
+  - Import系: `IJobRepository`, `ITemplateRepository`, `IErrorRepository`
+  - Report系: `IReportTemplateRepository`, `IReportJobRepository`, `IReportOutputRepository`
+  - 共通: `IAuditRepository`
 - パーサーインターフェース（ABC）: `IFileParser`
 - バリデータインターフェース（ABC）: `IDataValidator`
-- ドメイン例外（DomainError, ParseError, ValidationError）
+- 帳票生成インターフェース（ABC）: `IReportGenerator`
+- ドメイン例外（DomainError, ParseError, ValidationError, ReportGenerationError）
 - 外部ライブラリへの依存を一切持たない
 
 #### application（domain層のみに依存）
 
 - ユースケース単位のサービスクラス
-- `JobService`: アップロード・パース・バリデーション・取り込み・再実行
-- `TemplateService`: テンプレートCRUD
-- `AuditService`: 監査ログ記録
+- Import系:
+  - `ImportJobService`: アップロード・パース・バリデーション・取り込み・再実行
+  - `ImportTemplateService`: Import用テンプレートCRUD
+- Report系:
+  - `ReportTemplateService`: 帳票テンプレートCRUD
+  - `ReportJobService`: 帳票出力ジョブ管理・生成実行・再実行
+- 共通:
+  - `AuditService`: 監査ログ記録（Import・Report両方のイベント）
 - コンストラクタでdomain層のインターフェースを受け取る（具象を知らない）
 
 #### infrastructure（domain層のインターフェースを実装）
 
-- `database/`: SQLAlchemyセッション・テーブルモデル
+- `database/`: SQLAlchemyセッション・テーブルモデル（Import系 + Report系）
 - `repositories/`: domain層の `IXxxRepository` を実装するリポジトリ具象クラス
+  - Import系: JobRepository, TemplateRepository, ErrorRepository
+  - Report系: ReportTemplateRepository, ReportJobRepository, ReportOutputRepository
+  - 共通: AuditRepository
 - `parser/`: domain層の `IFileParser` を実装するCSV/xlsxパーサー（pandas + openpyxl）
 - `validator/`: domain層の `IDataValidator` を実装するpanderaバリデータ
 - `staging/`: stagingテーブル管理・本番反映
+- `report_generator/`: domain層の `IReportGenerator` を実装する帳票生成（PDF/Excel/CSV）
 - `config.py`: pydantic-settings設定
 
 #### presentation（最外層・DI組み立て）
@@ -130,7 +163,7 @@ presentation → application → domain ← infrastructure
 - 例外ハンドラによる統一エラーレスポンス
 - FastAPIのDependsでinfrastructure具象 → application サービスへの依存注入を組み立てる
 
-### Excel/CSV処理パイプライン
+### Excel/CSV処理パイプライン（Import）
 
 ```
 ファイル受信
@@ -139,8 +172,23 @@ presentation → application → domain ← infrastructure
   → staging/ でstaging投入 → 本番反映
 ```
 
+### 帳票生成パイプライン（Report）
+
+```
+出力ジョブ作成（status: pending）
+  → データ抽出（SQLAlchemy: filter_conditionsに基づくクエリ）
+  → 帳票生成（status: generating）
+    → report_generator/ で形式別ファイル生成
+      → PDF: レイアウト定義に基づくPDF生成
+      → Excel: openpyxlによるxlsx生成
+      → CSV: pandas to_csvによるCSV生成
+  → ファイル保存 → report_outputs レコード作成
+  → 完了（status: completed）/ 失敗（status: failed）
+```
+
 ### 非同期処理（MVP）
 
 - I/Oバウンド: FastAPIのasync/await
-- CPUバウンド（パース・バリデーション）: `run_in_executor` でスレッドプール
+- CPUバウンド（パース・バリデーション・帳票生成）: `run_in_executor` でスレッドプール
 - ジョブ進捗: フロントからのポーリング（TanStack Query refetchInterval）
+- Import・Report両方のジョブステータスをポーリングで追跡する
