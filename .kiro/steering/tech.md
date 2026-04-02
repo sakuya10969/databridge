@@ -1,4 +1,4 @@
-# 技術設計: 業務データ取り込み基盤
+# 技術設計: 業務データ取り込み・帳票出力基盤
 
 ## 技術スタック一覧
 
@@ -58,11 +58,11 @@ shadcn/uiはコピーベースのUIコンポーネントであり、カスタマ
 スタイルは `radix-nova` を採用済み。コンポーネントエイリアスは `~/components/ui` とする。
 
 TanStack Tableはヘッドレスであり、shadcn/uiのTableコンポーネントと組み合わせて使用する。
-プレビューテーブル・エラーテーブル・ジョブ一覧テーブルの全てでTanStack Tableを使用する。
+プレビューテーブル・エラーテーブル・ジョブ一覧テーブル・帳票出力ジョブ一覧テーブルの全てでTanStack Tableを使用する。
 10万行対応のため、TanStack Virtualによる仮想スクロールを併用する。
 
 TanStack Queryはサーバー状態のキャッシュ・再取得・楽観的更新を担う。
-ジョブステータスのポーリングにも使用する。
+Import・Report両方のジョブステータスのポーリングにも使用する。
 
 ### FSD（Feature-Sliced Design）
 
@@ -138,6 +138,36 @@ pandera DataFrameSchemaを動的に構築する。テンプレートの列定義
 
 エラーは `SchemaErrors` から行番号・列名・エラー種別・該当値を抽出し、構造化して保存する。
 
+### 帳票生成方針
+
+#### 役割分担
+
+| ライブラリ | 役割 |
+|-----------|------|
+| openpyxl | Excel帳票生成。Import用で導入済みのため追加依存なし |
+| pandas | CSV帳票生成。to_csvで出力 |
+| WeasyPrint or reportlab | PDF帳票生成。MVP実装開始時に選定 |
+
+#### 処理フロー
+
+1. 帳票出力ジョブ作成（status: pending）
+2. データ抽出（status: generating）→ SQLAlchemyでfilter_conditionsに基づくクエリ実行
+3. 帳票生成 → report_generator/ で形式別ファイル生成
+4. ファイル保存 → report_outputs レコード作成
+5. 完了（status: completed）または失敗（status: failed）
+
+#### 出力形式別の生成方針
+
+- **PDF**: レイアウト定義（layout_definition）に基づき、タイトル・ヘッダ・フッタ・ページ番号を含むPDFを生成。日本語フォント対応必須
+- **Excel**: openpyxlでxlsxを生成。フィールド定義のlabel・width・format_typeに基づきセル書式を設定
+- **CSV**: pandasのto_csvで生成。フィールド定義のlabel・display_orderに基づきヘッダ行・列順を制御
+
+#### 帳票テンプレートとImport用テンプレートの分離
+
+Import用テンプレート（templates テーブル）は列マッピング + バリデーション設定の再利用定義である。
+帳票テンプレート（report_templates + report_template_fields テーブル）は帳票レイアウト + フィールド定義である。
+両者は完全に別概念であり、テーブル・エンティティ・サービスを分離する。
+
 ## DB設計方針
 
 ### staging前提
@@ -147,13 +177,29 @@ pandera DataFrameSchemaを動的に構築する。テンプレートの列定義
 
 ### 主要テーブル
 
+#### Import系
+
 | テーブル | 用途 |
 |---------|------|
 | import_jobs | ジョブ管理。ステータス・ファイル情報・実行者・タイムスタンプ |
 | import_errors | バリデーションエラー。行番号・列名・エラー種別・該当値・ジョブID |
 | column_mappings | 列マッピング定義。ソース列名・ターゲット列名・型・ジョブID |
-| templates | テンプレート。名前・列マッピング・バリデーション設定のJSON |
-| audit_logs | 監査ログ。操作者・操作種別・対象・タイムスタンプ・詳細 |
+| templates | Import用テンプレート。名前・列マッピング・バリデーション設定のJSON |
+
+#### Report系
+
+| テーブル | 用途 |
+|---------|------|
+| report_templates | 帳票テンプレート。名前・帳票種別・出力形式・レイアウト定義 |
+| report_template_fields | 帳票フィールド定義。フィールドキー・ラベル・書式・表示順 |
+| report_jobs | 帳票出力ジョブ。テンプレートID・ステータス・フィルタ条件・出力形式 |
+| report_outputs | 帳票出力ファイル。ファイル名・パス・MIMEタイプ・チェックサム |
+
+#### 共通
+
+| テーブル | 用途 |
+|---------|------|
+| audit_logs | 監査ログ。操作者・操作種別・対象・タイムスタンプ・詳細（Import・Report両方） |
 
 ### マイグレーション
 
@@ -165,6 +211,9 @@ Alembicで管理する。`server/alembic/` に配置する。
 ### エンドポイント設計
 
 RESTfulに設計する。リソース単位でエンドポイントを分割する。
+Import系とReport系は別プレフィックスで整理する。
+
+#### Import系
 
 ```
 POST   /api/v1/jobs/upload          ファイルアップロード・ジョブ作成
@@ -177,10 +226,30 @@ POST   /api/v1/jobs/{job_id}/validate バリデーション実行
 GET    /api/v1/jobs/{job_id}/errors  エラー一覧
 POST   /api/v1/jobs/{job_id}/import  取り込み実行
 POST   /api/v1/jobs/{job_id}/retry   再実行
-GET    /api/v1/templates             テンプレート一覧
-POST   /api/v1/templates             テンプレート作成
-GET    /api/v1/templates/{id}        テンプレート詳細
-GET    /api/v1/audit-logs            監査ログ一覧
+GET    /api/v1/templates             Import用テンプレート一覧
+POST   /api/v1/templates             Import用テンプレート作成
+GET    /api/v1/templates/{id}        Import用テンプレート詳細
+```
+
+#### Report系
+
+```
+POST   /api/v1/report-templates              帳票テンプレート作成
+GET    /api/v1/report-templates              帳票テンプレート一覧
+GET    /api/v1/report-templates/{id}         帳票テンプレート詳細
+PUT    /api/v1/report-templates/{id}         帳票テンプレート更新
+DELETE /api/v1/report-templates/{id}         帳票テンプレート削除
+POST   /api/v1/report-jobs                   帳票出力ジョブ作成
+GET    /api/v1/report-jobs                   帳票出力ジョブ一覧
+GET    /api/v1/report-jobs/{id}              帳票出力ジョブ詳細
+GET    /api/v1/report-jobs/{id}/download     帳票ファイルダウンロード
+POST   /api/v1/report-jobs/{id}/retry        帳票出力再実行
+```
+
+#### 共通
+
+```
+GET    /api/v1/audit-logs            監査ログ一覧（Import・Report両方）
 ```
 
 ### レスポンス形式
@@ -207,9 +276,12 @@ GET    /api/v1/audit-logs            監査ログ一覧
 ## 非同期処理方針（MVP）
 
 MVPでは同期処理を基本とする。FastAPIのasync/awaitでI/Oバウンドな処理を非同期化する。
-CPU負荷の高いパース・バリデーション処理は `run_in_executor` でスレッドプールに逃がす。
+CPU負荷の高いパース・バリデーション・帳票生成処理は `run_in_executor` でスレッドプールに逃がす。
 
-拡張フェーズでCelery等のタスクキューを導入する。MVP時点ではジョブのステータスポーリングで進捗を表示する。
+帳票出力ジョブは非同期ジョブとして設計する。ジョブ作成（POST）は即座にレスポンスを返し、
+生成処理はバックグラウンドで実行する。フロントからのステータスポーリングで進捗を追跡する。
+
+拡張フェーズでCelery等のタスクキューを導入する。MVP時点ではImport・Report両方のジョブステータスポーリングで進捗を表示する。
 
 ## ログ・エラー処理
 
@@ -220,9 +292,10 @@ Pythonの標準 `logging` モジュールを使用する。JSON形式で出力�
 
 ### エラーハンドリング
 
-- ドメイン例外クラスを定義する（`DomainError`, `ValidationError`, `ParseError` 等）
+- ドメイン例外クラスを定義する（`DomainError`, `ValidationError`, `ParseError`, `ReportGenerationError` 等）
 - FastAPIの例外ハンドラで統一レスポンスに変換する
-- バリデーションエラーは例外ではなく、構造化データとしてDBに保存する
+- Import用バリデーションエラーは例外ではなく、構造化データとしてDBに保存する
+- 帳票生成エラーはreport_jobs.error_messageに記録し、ステータスをfailedに遷移する
 - 予期しないエラーは500レスポンスとし、スタックトレースをログに記録する
 
 ### フロントエンドエラー

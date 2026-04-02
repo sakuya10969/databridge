@@ -1,4 +1,4 @@
-# ディレクトリ構成: 業務データ取り込み基盤
+# ディレクトリ構成: 業務データ取り込み・帳票出力基盤
 
 ## 全体構成
 
@@ -43,8 +43,14 @@ app/routes/
   jobs.$jobId.mapping.tsx        列マッピング設定
   jobs.$jobId.validate.tsx       バリデーション実行・結果
   jobs.$jobId.errors.tsx         エラー詳細一覧
-  templates.tsx                  テンプレート一覧
-  templates.$templateId.tsx      テンプレート詳細
+  templates.tsx                  Import用テンプレート一覧
+  templates.$templateId.tsx      Import用テンプレート詳細
+  report-templates.tsx           帳票テンプレート一覧
+  report-templates.new.tsx       帳票テンプレート作成
+  report-templates.$templateId.tsx  帳票テンプレート詳細・編集
+  report-jobs.tsx                帳票出力ジョブ一覧
+  report-jobs.new.tsx            帳票出力ジョブ作成（テンプレート選択・条件指定）
+  report-jobs.$jobId.tsx         帳票出力ジョブ詳細・ダウンロード
   audit-logs.tsx                 監査ログ一覧
 ```
 
@@ -103,11 +109,33 @@ app/features/
 
   template/
     hooks/
-      use-templates.ts           テンプレート一覧・詳細
+      use-templates.ts           Import用テンプレート一覧・詳細
     api/
       fetch-templates.ts         テンプレート取得API
       save-template.ts           テンプレート保存API
     types.ts                     テンプレート関連の型
+
+  report-template/
+    hooks/
+      use-report-templates.ts    帳票テンプレート一覧・詳細
+      use-report-template-form.ts 帳票テンプレート作成・編集フォーム
+    api/
+      fetch-report-templates.ts  帳票テンプレート取得API
+      save-report-template.ts    帳票テンプレート保存API
+      delete-report-template.ts  帳票テンプレート削除API
+    types.ts                     帳票テンプレート関連の型
+
+  report-job/
+    hooks/
+      use-report-job-polling.ts  帳票出力ジョブステータスポーリング
+      use-report-job-list.ts     帳票出力ジョブ一覧取得
+    api/
+      fetch-report-jobs.ts       帳票出力ジョブ一覧API
+      fetch-report-job.ts        帳票出力ジョブ詳細API
+      create-report-job.ts       帳票出力ジョブ作成API
+      retry-report-job.ts        帳票出力再実行API
+      download-report.ts         帳票ファイルダウンロードAPI
+    types.ts                     帳票出力ジョブ関連の型
 
   audit-log/
     hooks/
@@ -126,9 +154,15 @@ app/entities/
   column/
     types.ts                     Column型・マッピング型
   template/
-    types.ts                     Template型
+    types.ts                     Import用Template型
   error/
     types.ts                     ImportError型・エラー種別enum
+  report-template/
+    types.ts                     ReportTemplate型・ReportTemplateField型・帳票種別enum
+  report-job/
+    types.ts                     ReportJob型・ReportJobStatus enum
+  report-output/
+    types.ts                     ReportOutput型
 ```
 
 ### widgets/ — UIブロック
@@ -146,11 +180,21 @@ app/widgets/
   error-table/
     error-table.tsx              エラー一覧テーブル（行・列単位）
   job-table/
-    job-table.tsx                ジョブ一覧テーブル
+    job-table.tsx                Import用ジョブ一覧テーブル
   job-status-badge/
-    job-status-badge.tsx         ステータスバッジ
+    job-status-badge.tsx         ステータスバッジ（Import・Report共用）
   template-selector/
-    template-selector.tsx        テンプレート選択UI
+    template-selector.tsx        Import用テンプレート選択UI
+  report-template-form/
+    report-template-form.tsx     帳票テンプレート作成・編集フォーム
+  report-field-editor/
+    report-field-editor.tsx      帳票フィールド定義エディタ
+  report-job-table/
+    report-job-table.tsx         帳票出力ジョブ一覧テーブル
+  report-condition-form/
+    report-condition-form.tsx    帳票出力条件指定フォーム（フィルタ・ソート・出力形式）
+  report-download-button/
+    report-download-button.tsx   帳票ファイルダウンロードボタン
 ```
 
 ### shared/ — 共通
@@ -189,7 +233,15 @@ server/app/presentation/
     schemas.py                   リクエスト/レスポンスPydanticモデル
   templates/
     __init__.py
-    router.py                    /api/v1/templates エンドポイント
+    router.py                    /api/v1/templates エンドポイント（Import用）
+    schemas.py
+  report_templates/
+    __init__.py
+    router.py                    /api/v1/report-templates エンドポイント
+    schemas.py
+  report_jobs/
+    __init__.py
+    router.py                    /api/v1/report-jobs エンドポイント
     schemas.py
   audit_logs/
     __init__.py
@@ -203,9 +255,11 @@ server/app/presentation/
 ```
 server/app/application/
   __init__.py
-  job_service.py                 ジョブ管理ユースケース（アップロード・パース・バリデーション・取り込み・再実行）
-  template_service.py            テンプレート管理ユースケース
-  audit_service.py               監査ログ記録ユースケース
+  import_job_service.py          Import用ジョブ管理ユースケース（アップロード・パース・バリデーション・取り込み・再実行）
+  import_template_service.py     Import用テンプレート管理ユースケース
+  report_template_service.py     帳票テンプレート管理ユースケース
+  report_job_service.py          帳票出力ジョブ管理ユースケース（作成・生成・再実行）
+  audit_service.py               監査ログ記録ユースケース（Import・Report共通）
 ```
 
 ### domain/ — エンティティ・ビジネスロジック・インターフェース（最内層）
@@ -217,10 +271,28 @@ server/app/domain/
     __init__.py
     import_job.py                ImportJobエンティティ・ステータスenum
     column_mapping.py            ColumnMappingエンティティ
-    template.py                  Templateエンティティ
+    template.py                  Import用Templateエンティティ
     import_error.py              ImportErrorエンティティ
+    report_template.py           ReportTemplateエンティティ・帳票種別enum
+    report_template_field.py     ReportTemplateFieldエンティティ
+    report_job.py                ReportJobエンティティ・ステータスenum
+    report_output.py             ReportOutputエンティティ
     audit_log.py                 AuditLogエンティティ
-  exceptions.py                  ドメイン例外（DomainError, ParseError, ValidationError等）
+  repositories/
+    __init__.py
+    i_job_repository.py          IJobRepository（ABC）
+    i_template_repository.py     ITemplateRepository（ABC、Import用）
+    i_error_repository.py        IErrorRepository（ABC）
+    i_report_template_repository.py  IReportTemplateRepository（ABC）
+    i_report_job_repository.py   IReportJobRepository（ABC）
+    i_report_output_repository.py IReportOutputRepository（ABC）
+    i_audit_repository.py        IAuditRepository（ABC）
+  interfaces/
+    __init__.py
+    i_file_parser.py             IFileParser（ABC）
+    i_data_validator.py          IDataValidator（ABC）
+    i_report_generator.py        IReportGenerator（ABC）
+  exceptions.py                  ドメイン例外（DomainError, ParseError, ValidationError, ReportGenerationError等）
 ```
 
 ### infrastructure/ — DB・パーサー・外部連携
@@ -231,12 +303,15 @@ server/app/infrastructure/
   database/
     __init__.py
     session.py                   SQLAlchemyセッション管理
-    models.py                    SQLAlchemyテーブルモデル
+    models.py                    SQLAlchemyテーブルモデル（Import系 + Report系）
   repositories/
     __init__.py
     job_repository.py            ImportJobリポジトリ
-    template_repository.py       Templateリポジトリ
+    template_repository.py       Import用Templateリポジトリ
     error_repository.py          ImportErrorリポジトリ
+    report_template_repository.py 帳票テンプレートリポジトリ
+    report_job_repository.py     帳票出力ジョブリポジトリ
+    report_output_repository.py  帳票出力ファイルリポジトリ
     audit_repository.py          AuditLogリポジトリ
   parser/
     __init__.py
@@ -250,6 +325,12 @@ server/app/infrastructure/
   staging/
     __init__.py
     staging_manager.py           stagingテーブル管理・本番反映
+  report_generator/
+    __init__.py
+    base_generator.py            帳票生成基底クラス
+    pdf_generator.py             PDF帳票生成
+    excel_generator.py           Excel帳票生成（openpyxl）
+    csv_generator.py             CSV帳票生成（pandas）
   config.py                      pydantic-settings設定
 ```
 
