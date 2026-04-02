@@ -208,7 +208,7 @@ server/app/application/
   audit_service.py               監査ログ記録ユースケース
 ```
 
-### domain/ — エンティティ・ビジネスロジック
+### domain/ — エンティティ・ビジネスロジック・インターフェース（最内層）
 
 ```
 server/app/domain/
@@ -305,19 +305,18 @@ features → shared
 - entities: sharedのみ参照する。他のentitiesは参照しない
 - shared: 他のレイヤーを参照しない
 
-### バックエンド（レイヤード準拠）
+### バックエンド（クリーンアーキテクチャ準拠）
+
+依存方向は全てdomain層（最内層）に向かう。依存性の逆転（DIP）を適用する。
 
 ```
-presentation → application → domain
-presentation → infrastructure（DI経由）
-application → infrastructure（DI経由）
-domain → 外部依存なし
+presentation → application → domain ← infrastructure
 ```
 
-- presentation: application/infrastructureを参照する
-- application: domain/infrastructureを参照する
-- domain: 外部依存を持たない。純粋なPythonコードとする
-- infrastructure: domainを参照する（モデル変換等）
+- domain: 最内層。外部依存を持たない。リポジトリインターフェース（ABC）を定義する
+- application: domain層のエンティティ・インターフェースに依存する。infrastructure層を直接参照しない
+- infrastructure: domain層のインターフェースを実装する（リポジトリ具象クラス等）
+- presentation: application層のサービスを呼び出す。FastAPIのDependsでinfrastructure→applicationへDI
 
 ## 禁止事項
 

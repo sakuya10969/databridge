@@ -70,10 +70,11 @@ TanStack Queryはサーバー状態のキャッシュ・再取得・楽観的更
 ただし、React Routerのframeworkモードに合わせ、`routes/` を最上位エントリとする変則構成とする。
 詳細は `structure.md` に記載する。
 
-### レイヤードアーキテクチャ
+### クリーンアーキテクチャ
 
 バックエンドはpresentation / application / domain / infrastructureの4層とする。
-各層の依存方向は上位→下位のみとし、逆方向の依存は禁止する。
+全ての依存はdomain層（最内層）に向かう。domain層は外部に一切依存しない。
+application層はdomain層が定義するリポジトリインターフェース（抽象基底クラス）に依存し、infrastructure層がその具象実装を提供する（依存性の逆転）。
 
 ## フロントエンド構成方針
 
