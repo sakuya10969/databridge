@@ -2,8 +2,19 @@
 
 ## 概要
 
-PostgreSQLを使用する。全テーブルのPKはUUID（`gen_random_uuid()`）。タイムスタンプはUTC。
+PostgreSQL 17をDocker Composeで運用する。全テーブルのPKはUUID（`gen_random_uuid()`）。タイムスタンプはUTC。
 マイグレーションはAlembic（`server/alembic/`）で管理する。
+
+### 接続情報（ローカル開発）
+
+| 項目 | 値 |
+|------|-----|
+| ホスト | localhost |
+| ポート | 5432 |
+| ユーザー | app |
+| パスワード | app |
+| データベース名 | data_platform |
+| 接続URL | `postgresql://app:app@localhost:5432/data_platform` |
 
 本システムはImport系テーブル（5テーブル）とReport系テーブル（4テーブル）、および共通のaudit_logsで構成する。
 

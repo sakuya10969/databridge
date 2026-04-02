@@ -9,8 +9,9 @@
 └─────────────────┘                   └────────┬──────────────┘
                                                │
                                       ┌────────▼──────────┐
-                                      │   PostgreSQL       │
-                                      │  (staging + 本番)   │
+                                      │   PostgreSQL 17    │
+                                      │  (Docker Compose)  │
+                                      │  staging + 本番     │
                                       └──────────┬────────┘
                                                  │
                                       ┌──────────▼────────┐
@@ -18,6 +19,18 @@
                                       │  (upload + report)  │
                                       └───────────────────┘
 ```
+
+### ローカル開発環境
+
+PostgreSQLはDocker Composeで管理する（`docker-compose.yml`）。
+
+- コンテナ名: `data-platform-db`
+- ポート: 5432
+- ユーザー: `app` / パスワード: `app` / DB名: `data_platform`
+- データ永続化: `db-data` ボリューム
+- ヘルスチェック: `pg_isready` で5秒間隔チェック
+
+起動: `docker compose up -d`、停止: `docker compose down`、データ削除: `docker compose down -v`
 
 ## 責務分離: Import と Report
 

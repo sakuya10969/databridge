@@ -64,10 +64,20 @@ PDF生成ライブラリはMVP実装開始時に選定する。選定基準:
 | フロントエンド | Bun | `client/bun.lock` | - |
 | バックエンド | uv | `server/uv.lock` | `server/.venv` |
 
+## インフラ
+
+| 技術 | 用途 | 備考 |
+|------|------|------|
+| Docker Compose | ローカル開発環境のコンテナ管理 | `docker-compose.yml` で定義 |
+| PostgreSQL 17 | データベースコンテナ | ポート5432、ユーザー: app、DB名: data_platform |
+
 ## ビルド・実行
 
 | 操作 | コマンド |
 |------|---------|
+| DB起動 | `docker compose up -d` |
+| DB停止 | `docker compose down` |
+| DBデータ削除 | `docker compose down -v` |
 | フロント開発サーバー | `cd client && bun run dev` |
 | フロントビルド | `cd client && bun run build` |
 | フロント型チェック | `cd client && bun run typecheck` |
