@@ -31,7 +31,7 @@
 | uv | - | パッケージマネージャ |
 | SQLAlchemy | 2.x | ORM |
 | Alembic | 1.x | DBマイグレーション |
-| PostgreSQL | - | データベース |
+| PostgreSQL | 17 | データベース |
 | psycopg[binary] | 3.x | PostgreSQLドライバ |
 | pandas | 3.x | データフレーム操作 |
 | openpyxl | 3.x | xlsx読み込み |
@@ -41,6 +41,22 @@
 | msoffcrypto-tool | 6.x | パスワード付きExcel（拡張用） |
 
 ## 採用理由
+
+### Docker Compose（ローカル開発DB）
+
+PostgreSQL 17をDocker Composeで管理する（`docker-compose.yml`）。
+
+- コンテナ名: `data-platform-db`
+- ポート: 5432
+- ユーザー: `app` / パスワード: `app` / DB名: `data_platform`
+- 接続URL: `postgresql://app:app@localhost:5432/data_platform`
+- データ永続化: `db-data` ボリューム
+- ヘルスチェック: `pg_isready` で5秒間隔チェック
+
+コマンド:
+- 起動: `docker compose up -d`
+- 停止: `docker compose down`
+- データ削除: `docker compose down -v`
 
 ### Bun
 
