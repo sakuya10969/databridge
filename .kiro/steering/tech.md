@@ -48,8 +48,8 @@ PostgreSQL 17をDocker Composeで管理する（`docker-compose.yml`）。
 
 - コンテナ名: `data-platform-db`
 - ポート: 5432
-- ユーザー: `app` / パスワード: `app` / DB名: `data_platform`
-- 接続URL: `postgresql://app:app@localhost:5432/data_platform`
+- ユーザー: `admin` / パスワード: `password` / DB名: `databridge`
+- 接続URL: `postgresql://admin:password@localhost:5432/databridge`
 - データ永続化: `db-data` ボリューム
 - ヘルスチェック: `pg_isready` で5秒間隔チェック
 
