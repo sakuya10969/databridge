@@ -5,21 +5,32 @@ import { DataTable } from "~/shared/ui/data-table";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
 import type { ReportTemplate } from "~/entities/report-template/types";
 import { formatDate } from "~/shared/utils/format-date";
+import { Plus } from "lucide-react";
 
 const columns: ColumnDef<ReportTemplate, unknown>[] = [
   {
     accessorKey: "name",
     header: "テンプレート名",
     cell: ({ row }) => (
-      <Link to={`/report-templates/${row.original.id}`} className="text-primary hover:underline">
+      <Link to={`/report-templates/${row.original.id}`} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
         {row.original.name}
       </Link>
     ),
   },
-  { accessorKey: "report_type", header: "帳票種別" },
-  { accessorKey: "default_output_format", header: "出力形式" },
+  {
+    accessorKey: "report_type",
+    header: "帳票種別",
+    cell: ({ getValue }) => <Badge variant="outline">{getValue() as string}</Badge>,
+  },
+  {
+    accessorKey: "default_output_format",
+    header: "出力形式",
+    cell: ({ getValue }) => <Badge variant="secondary">{(getValue() as string).toUpperCase()}</Badge>,
+  },
   { accessorKey: "target_resource_type", header: "対象リソース" },
   {
     accessorKey: "created_at",
@@ -30,23 +41,34 @@ const columns: ColumnDef<ReportTemplate, unknown>[] = [
 
 export default function ReportTemplatesPage() {
   const { data, isLoading } = useReportTemplates();
-
   const templates = data?.data ?? [];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">帳票テンプレート</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">帳票テンプレート</h1>
+          <p className="mt-1 text-sm text-gray-500">帳票出力のレイアウト・フィールド定義を管理します</p>
+        </div>
         <Link to="/report-templates/new">
-          <Button>テンプレート作成</Button>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            テンプレート作成
+          </Button>
         </Link>
       </div>
 
-      {isLoading && <LoadingSpinner />}
-      {!isLoading && templates.length === 0 && (
-        <EmptyState title="帳票テンプレートがありません" />
+      {isLoading && (
+        <div className="flex justify-center py-12"><LoadingSpinner /></div>
       )}
-      {templates.length > 0 && <DataTable columns={columns} data={templates} />}
+      {!isLoading && templates.length === 0 && (
+        <EmptyState title="帳票テンプレートがありません" description="テンプレートを作成して帳票出力を始めましょう" />
+      )}
+      {templates.length > 0 && (
+        <Card className="shadow-sm overflow-hidden">
+          <DataTable columns={columns} data={templates} />
+        </Card>
+      )}
     </div>
   );
 }

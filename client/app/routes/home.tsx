@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
+import { Upload, ChevronLeft, ChevronRight } from "lucide-react";
 
 export function meta() {
   return [{ title: "DataBridge - ダッシュボード" }];
@@ -39,21 +40,27 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ジョブ一覧</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">ジョブ一覧</h1>
+          <p className="mt-1 text-sm text-gray-500">取り込みジョブの状況を確認できます</p>
+        </div>
         <Link to="/jobs/upload">
-          <Button>ファイルアップロード</Button>
+          <Button className="gap-2">
+            <Upload className="h-4 w-4" />
+            ファイルアップロード
+          </Button>
         </Link>
       </div>
 
-      <Card>
-        <CardContent className="pt-4">
+      <Card className="shadow-sm">
+        <CardContent className="py-4">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">ステータス:</span>
+            <span className="text-sm font-medium text-gray-600">ステータス:</span>
             <Select
               value={status}
               onValueChange={(v) => { setStatus(v); setPage(1); }}
             >
-              <SelectTrigger className="w-44">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -64,37 +71,51 @@ export default function Home() {
                 ))}
               </SelectContent>
             </Select>
+            {meta && (
+              <span className="ml-auto text-sm text-gray-400">全 {meta.total} 件</span>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {isLoading && <LoadingSpinner />}
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner />
+        </div>
+      )}
       {!isLoading && jobs.length === 0 && (
         <EmptyState title="ジョブがありません" description="ファイルをアップロードして開始してください" />
       )}
-      {jobs.length > 0 && <JobTable jobs={jobs} />}
+      {jobs.length > 0 && (
+        <Card className="shadow-sm overflow-hidden">
+          <JobTable jobs={jobs} />
+        </Card>
+      )}
 
-      {meta && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      {meta && meta.total > meta.per_page && (
+        <div className="flex items-center justify-center gap-3 text-sm">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
+            className="gap-1"
           >
+            <ChevronLeft className="h-4 w-4" />
             前へ
           </Button>
-          <span>
+          <span className="text-gray-600 tabular-nums">
             {page} / {Math.ceil(meta.total / meta.per_page)} ページ
-            （全 {meta.total} 件）
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setPage((p) => p + 1)}
             disabled={page * meta.per_page >= meta.total}
+            className="gap-1"
           >
             次へ
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}

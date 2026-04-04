@@ -1,11 +1,11 @@
-import { Skeleton } from "~/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
+
+const sizes = { sm: "h-4 w-4", md: "h-6 w-6", lg: "h-10 w-10" };
 
 export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const heights = { sm: "h-4", md: "h-8", lg: "h-12" };
   return (
-    <div className="space-y-2">
-      <Skeleton className={`w-full ${heights[size]} rounded-md`} />
-      <Skeleton className={`w-3/4 ${heights[size]} rounded-md`} />
+    <div className="flex items-center justify-center py-4">
+      <Loader2 className={`${sizes[size]} animate-spin text-blue-500`} />
     </div>
   );
 }

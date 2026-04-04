@@ -3,10 +3,9 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useFileUpload } from "~/features/upload/hooks/use-file-upload";
 import { UploadDropzone } from "~/widgets/upload-dropzone/upload-dropzone";
-import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 
 export default function JobsUploadPage() {
   const navigate = useNavigate();
@@ -19,14 +18,18 @@ export default function JobsUploadPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">ファイルアップロード</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">ファイルアップロード</h1>
+        <p className="mt-1 text-sm text-gray-500">CSV または Excel ファイルを取り込みます</p>
+      </div>
 
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">アップロード設定</CardTitle>
+          <CardDescription>操作者名を入力し、ファイルを選択してください</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
             <Label htmlFor="operator">操作者名</Label>
             <Input
               id="operator"
@@ -39,13 +42,13 @@ export default function JobsUploadPage() {
 
           <UploadDropzone
             isUploading={upload.isPending}
-            onFileAccepted={(file) => upload.mutate({ file, operator })}
+            onUpload={(file) => upload.mutate({ file, operator })}
           />
 
-          {upload.isPending && <LoadingSpinner size="sm" />}
-
           {upload.isError && (
-            <p className="text-sm text-destructive">{String(upload.error)}</p>
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+              {String(upload.error)}
+            </div>
           )}
         </CardContent>
       </Card>

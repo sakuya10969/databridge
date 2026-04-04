@@ -10,11 +10,22 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { formatDate } from "~/shared/utils/format-date";
 import { formatFileSize } from "~/shared/utils/format-file-size";
+import {
+  ArrowLeft,
+  FileSpreadsheet,
+  User,
+  Calendar,
+  AlertCircle,
+  Rows3,
+  Play,
+  RotateCcw,
+  Columns3,
+} from "lucide-react";
 
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const qc = useQueryClient();
-  const { data: job, isLoading } = useJobPolling(jobId!);
+  const { data: job, isLoading, isError } = useJobPolling(jobId!);
 
   const importMutation = useMutation({
     mutationFn: () => runImport(jobId!),
@@ -34,66 +45,100 @@ export default function JobDetailPage() {
     onError: (e) => toast.error(String(e)),
   });
 
-  if (isLoading) return <LoadingSpinner />;
-  if (!job) return <p>ジョブが見つかりません</p>;
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (isError || !job) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-12 w-12 text-gray-300 mb-4" />
+        <p className="text-lg font-medium text-gray-700">ジョブが見つかりません</p>
+        <p className="mt-1 text-sm text-gray-500">指定されたジョブは存在しないか、削除された可能性があります</p>
+        <Link to="/" className="mt-4">
+          <Button variant="outline" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            ジョブ一覧に戻る
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const infoItems = [
+    { icon: FileSpreadsheet, label: "ファイル名", value: job.file_name },
+    { icon: FileSpreadsheet, label: "ファイルサイズ", value: formatFileSize(job.file_size) },
+    { icon: FileSpreadsheet, label: "ファイル種別", value: job.file_type.toUpperCase() },
+    { icon: Rows3, label: "総行数", value: job.total_rows ?? "-" },
+    { icon: AlertCircle, label: "エラー件数", value: job.error_count },
+    { icon: User, label: "操作者", value: job.operator },
+    { icon: Calendar, label: "作成日時", value: formatDate(job.created_at) },
+    { icon: Calendar, label: "更新日時", value: formatDate(job.updated_at) },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex items-center gap-3">
+        <Link to="/">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500 hover:text-gray-700">
+            <ArrowLeft className="h-4 w-4" />
+            戻る
+          </Button>
+        </Link>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ジョブ詳細</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">ジョブ詳細</h1>
+          <p className="mt-1 text-sm text-gray-500 font-mono">{jobId}</p>
+        </div>
         <JobStatusBadge status={job.status} />
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
           <CardTitle className="text-base">ジョブ情報</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <dt className="font-medium text-muted-foreground">ファイル名</dt>
-              <dd>{job.file_name}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">ファイルサイズ</dt>
-              <dd>{formatFileSize(job.file_size)}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">ファイル種別</dt>
-              <dd>{job.file_type}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">総行数</dt>
-              <dd>{job.total_rows ?? "-"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">エラー件数</dt>
-              <dd>{job.error_count}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">操作者</dt>
-              <dd>{job.operator}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">作成日時</dt>
-              <dd>{formatDate(job.created_at)}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">更新日時</dt>
-              <dd>{formatDate(job.updated_at)}</dd>
-            </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {infoItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label} className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-md bg-gray-50 p-2">
+                    <Icon className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{item.label}</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-gray-900">{item.value}</dd>
+                  </div>
+                </div>
+              );
+            })}
           </dl>
         </CardContent>
       </Card>
 
-      <div className="flex gap-3">
-        {job.status === "validating" && (
+      <div className="flex flex-wrap gap-3">
+        {(job.status === "uploaded" || job.status === "parsing") && (
           <Link to={`/jobs/${jobId}/mapping`}>
-            <Button variant="outline">マッピング設定</Button>
+            <Button variant="outline" className="gap-2">
+              <Columns3 className="h-4 w-4" />
+              マッピング設定
+            </Button>
           </Link>
         )}
-        {job.status === "importing" && (
-          <Button onClick={() => importMutation.mutate()} disabled={importMutation.isPending}>
+        {job.status === "validating" && (
+          <Button
+            onClick={() => importMutation.mutate()}
+            disabled={importMutation.isPending}
+            className="gap-2"
+          >
+            <Play className="h-4 w-4" />
             {importMutation.isPending ? "実行中..." : "取り込み実行"}
           </Button>
         )}
@@ -102,13 +147,18 @@ export default function JobDetailPage() {
             variant="outline"
             onClick={() => retryMutation.mutate()}
             disabled={retryMutation.isPending}
+            className="gap-2"
           >
+            <RotateCcw className="h-4 w-4" />
             {retryMutation.isPending ? "再実行中..." : "再実行"}
           </Button>
         )}
         {job.error_count > 0 && (
           <Link to={`/jobs/${jobId}/errors`}>
-            <Button variant="outline">エラー一覧 ({job.error_count}件)</Button>
+            <Button variant="outline" className="gap-2">
+              <AlertCircle className="h-4 w-4" />
+              エラー一覧 ({job.error_count}件)
+            </Button>
           </Link>
         )}
       </div>
