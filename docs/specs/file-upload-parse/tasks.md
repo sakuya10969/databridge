@@ -1,0 +1,139 @@
+# 実装計画: ファイルアップロード・パース・プレビュー
+
+## 概要
+
+Importサブシステムの入口機能を段階的に実装する。
+Import_Jobドメインエンティティ・ステータス遷移ロジック、CSV/xlsxパーサー、アップロード・パース・プレビューのAPI・画面を構築する。
+shared-foundation（FastAPI基盤、SQLAlchemy、ドメイン例外、AuditService）が構築済みの前提とする。
+
+## タスク
+
+- [ ] 1. Importドメインエンティティを定義する
+  - [ ] 1.1 Import_Job・ColumnMapping・ImportErrorエンティティとEnumを定義する
+    - `server/app/domain/entities/import_job.py` に ImportJob dataclass と JobStatus enum を定義。ステータス遷移の妥当性検証メソッド `can_transition_to(new_status)` と `transition_to(new_status)` を含む
+    - `server/app/domain/entities/column_mapping.py` に ColumnMapping dataclass を定義
+    - `server/app/domain/entities/import_error.py` に ImportError dataclass と ErrorType enum を定義
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+
+  - [ ]* 1.2 ステータス遷移ロジックのプロパティテストを作成する
+    - **Property 5: ステータス遷移の妥当性**
+    - hypothesis で全ステータス×全遷移先の組み合わせを生成し、許可遷移のみ成功・それ以外は InvalidStatusTransitionError を検証
+    - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
+
+  - [ ] 1.3 リポジトリインターフェース（ABC）を定義する
+    - `server/app/domain/repositories/i_job_repository.py` に IJobRepository ABC を定義
+    - `server/app/domain/repositories/i_mapping_repository.py` に IMappingRepository ABC を定義
+    - `server/app/domain/repositories/i_error_repository.py` に IErrorRepository ABC を定義
+    - _Requirements: 全体基盤_
+
+  - [ ] 1.4 パーサーインターフェース（ABC）を定義する
+    - `server/app/domain/interfaces/__init__.py`, `server/app/domain/interfaces/i_file_parser.py` に IFileParser ABC を定義
+    - _Requirements: 全体基盤_
+
+- [ ] 2. Importインフラストラクチャ層を実装する
+  - [ ] 2.1 SQLAlchemyテーブルモデルを定義する
+    - `server/app/infrastructure/database/models.py` に ImportJobModel, ColumnMappingModel, ImportErrorModel を追加定義
+    - docs/database-design.md のカラム定義・制約・インデックスに準拠する
+    - _Requirements: 全体基盤_
+
+  - [ ] 2.2 Import系マイグレーションを作成する
+    - `uv run alembic revision --autogenerate -m "create import tables"` でマイグレーション生成
+    - import_jobs → column_mappings → import_errors の順序でテーブル作成
+    - _Requirements: 全体基盤_
+
+  - [ ] 2.3 JobRepositoryを実装する
+    - `server/app/infrastructure/repositories/job_repository.py` に JobRepository を実装（ImportJobModel ↔ ImportJob エンティティ変換含む）
+    - _Requirements: 1.1, 1.4_
+
+  - [ ] 2.4 CSV/xlsxパーサーを実装する
+    - `server/app/infrastructure/parser/__init__.py`, `server/app/infrastructure/parser/base_parser.py` にパーサー基底クラスを定義
+    - `server/app/infrastructure/parser/csv_parser.py` に CsvParser を実装（pandas read_csv、ヘッダ行指定対応）
+    - `server/app/infrastructure/parser/xlsx_parser.py` に XlsxParser を実装（openpyxl でシート一覧取得、pandas でDataFrame化、ヘッダ行指定対応）
+    - ファイル読み込みエラー時は ParseError を送出する
+    - _Requirements: 2.1, 2.2, 2.4_
+
+  - [ ]* 2.5 パースメタデータのプロパティテストを作成する
+    - **Property 3: パースメタデータの正確性**
+    - hypothesis でランダムなCSVデータを生成し、パース結果の列名・行数が入力と一致することを検証
+    - **Validates: Requirements 2.1, 2.2**
+
+  - [ ]* 2.6 プレビュー行数制限のプロパティテストを作成する
+    - **Property 4: プレビュー行数制限**
+    - hypothesis でランダムな行数のDataFrameを生成し、プレビュー取得結果の行数が min(実データ行数, 50) と一致することを検証
+    - **Validates: Requirements 3.1**
+
+- [ ] 3. Importアプリケーション層（upload/parse/preview）を実装する
+  - [ ] 3.1 ImportJobServiceのupload/parse/previewを実装する
+    - `server/app/application/import_job_service.py` に ImportJobService を実装
+    - `upload_file(file, operator)`: ファイル保存・ジョブ作成（status: uploaded）・監査ログ記録。ファイルサイズ50MB制限・拡張子チェック（csv/xlsx）
+    - `parse_file(job_id, sheet_name, header_row)`: パース実行・status→parsing遷移・列名/行数/シート一覧返却
+    - `get_preview(job_id, limit=50)`: パース済みDataFrameから先頭N行取得
+    - `get_job(job_id)`, `list_jobs(status, page, per_page)`: ジョブ取得
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2_
+
+  - [ ]* 3.2 アップロードによるジョブ作成のプロパティテストを作成する
+    - **Property 1: アップロードによるジョブ作成**
+    - hypothesis で有効なファイル名・サイズ・種別・操作者名を生成し、作成されたジョブが status=uploaded かつ全フィールドを含むことを検証
+    - **Validates: Requirements 1.1, 1.4**
+
+  - [ ]* 3.3 無効ファイル形式拒否のプロパティテストを作成する
+    - **Property 2: 無効ファイル形式の拒否**
+    - hypothesis で csv/xlsx 以外のファイル拡張子を生成し、アップロードが拒否されジョブが作成されないことを検証
+    - **Validates: Requirements 1.3**
+
+- [ ] 4. Importプレゼンテーション層（upload/parse/preview）を実装する
+  - [ ] 4.1 Import用Pydanticスキーマを定義する
+    - `server/app/presentation/jobs/__init__.py`, `server/app/presentation/jobs/schemas.py` を作成
+    - リクエスト: ParseRequest（sheet_name, header_row）
+    - レスポンス: JobResponse, JobListResponse, ParseResultResponse, PreviewResponse
+    - _Requirements: 全エンドポイント_
+
+  - [ ] 4.2 DI（依存性注入）ファクトリを実装する
+    - `server/app/presentation/dependencies.py` に ImportJobService のファクトリ関数を追加
+    - get_session → リポジトリ具象 → サービスクラスの依存チェーンを組み立てる
+    - _Requirements: 全体基盤_
+
+  - [ ] 4.3 Upload/Parse/Preview APIエンドポイントを実装する
+    - `server/app/presentation/jobs/router.py` に APIRouter を定義
+    - POST /api/v1/jobs/upload: ファイルアップロード（multipart/form-data）
+    - POST /api/v1/jobs/{job_id}/parse: パース実行
+    - GET /api/v1/jobs/{job_id}/preview: プレビュー取得
+    - GET /api/v1/jobs: ジョブ一覧（ページネーション、ステータスフィルタ）
+    - GET /api/v1/jobs/{job_id}: ジョブ詳細
+    - ルーター集約に追加
+    - _Requirements: 1.1-1.5, 2.1-2.4, 3.1-3.2_
+
+- [ ] 5. フロントエンド（upload/preview）を実装する
+  - [ ] 5.1 Import系エンティティ型定義を作成する
+    - `client/app/entities/import-job/types.ts` に ImportJob 型、JobStatus enum を定義
+    - `client/app/entities/column/types.ts` に Column 型、ColumnMapping 型を定義
+    - `client/app/entities/error/types.ts` に ImportError 型、ErrorType enum を定義
+    - _Requirements: 全エンティティ_
+
+  - [ ] 5.2 upload feature を実装する
+    - `client/app/features/upload/api/upload-file.ts` にファイルアップロードAPI呼び出しを実装
+    - `client/app/features/upload/hooks/use-file-upload.ts` に useMutation ベースのアップロードフックを実装
+    - `client/app/features/upload/types.ts` にアップロード関連の型を定義
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+
+  - [ ] 5.3 upload-dropzone widget を実装する
+    - `client/app/widgets/upload-dropzone/upload-dropzone.tsx` に react-dropzone ベースのドラッグ&ドロップUIを実装
+    - ファイル種別制限（csv, xlsx）、サイズ制限（50MB）のバリデーション
+    - _Requirements: 1.1, 1.2, 1.3_
+
+  - [ ] 5.4 preview-table widget を実装する
+    - `client/app/widgets/preview-table/preview-table.tsx` に TanStack Table + TanStack Virtual ベースのプレビューテーブルを実装
+    - _Requirements: 3.1_
+
+  - [ ] 5.5 ファイルアップロード画面を実装する
+    - `client/app/routes/jobs.upload.tsx` に upload-dropzone widget を配置
+    - action でファイルアップロードを実行、成功時にジョブ詳細画面へ遷移
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+
+- [ ] 6. チェックポイント - ファイルアップロード・パース・プレビュー完了
+  - 全テストが通ることを確認する。不明点があればユーザーに質問する。
+
+## 備考
+
+- `*` マーク付きタスクはオプション
+- ImportJobServiceは本specではupload/parse/previewのみ実装。set_mapping/validate/run_import/retryは後続specで追加

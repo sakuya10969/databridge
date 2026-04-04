@@ -1,0 +1,49 @@
+# 要件定義書: 列マッピング・バリデーション・エラー表示
+
+## はじめに
+
+本ドキュメントはImportサブシステムのデータ品質保証機能のMVP要件を定義する。
+列マッピング設定、panderaによるバリデーション実行、エラーの保存・表示までを責務とする。
+テンプレートからの列マッピング適用も含む。
+
+## 用語集
+
+- **Column_Mapping**: ソースファイルの列とターゲットDBの列の対応関係定義。データ型・NULL許可・一意制約・正規表現パターンを含む
+- **Import_Error**: バリデーションで検出されたエラー。行番号・列名・エラー種別・期待値・実際の値・メッセージを持つ
+- **pandera_Schema**: pandera DataFrameSchemaを動的に構築して実行するバリデーションエンジン
+- **Import_Template**: 列マッピング＋バリデーション設定の再利用可能な定義。column_definitionsをJSONBで格納する
+- **ErrorType**: エラー種別enum（type_error/required_error/unique_error/pattern_error/range_error/unknown_error）
+
+## 要件
+
+### 要件 1: 列マッピング設定
+
+**ユーザーストーリー:** 情報システム部門の担当者として、ソース列とターゲット列の対応関係を設定したい。それにより、ファイルデータを正しいDBカラムに投入できる。
+
+#### 受入条件
+
+1. WHEN ユーザーが列マッピングを設定した場合、THE System SHALL 各マッピング（ソース列名・ターゲット列名・データ型・NULL許可・一意制約・正規表現パターン）をImport_Jobに紐づけて保存する
+2. WHEN Import_Templateが指定された場合、THE System SHALL テンプレートの列定義をColumn_Mappingとして読み込み、ジョブに適用する
+3. WHEN 同一ジョブ内でソース列名またはターゲット列名が重複した場合、THE System SHALL マッピング設定を拒否し、重複エラーを返す
+
+### 要件 2: バリデーション実行
+
+**ユーザーストーリー:** 業務部門の担当者として、取り込み前にデータの整合性を検証したい。それにより、不正データのDB投入を防止できる。
+
+#### 受入条件
+
+1. WHEN バリデーション実行が要求された場合、THE System SHALL Column_Mappingの定義に基づきpandera_Schemaを動的に構築し、全行に対してバリデーションを実行する
+2. WHEN バリデーションでエラーが検出された場合、THE System SHALL 各エラーの行番号・列名・エラー種別・期待値・実際の値・エラーメッセージをImport_Errorとして保存する
+3. WHEN バリデーションが完了した場合、THE System SHALL Import_Jobのerror_countを更新し、総行数・エラー件数・有効行数のサマリを返す
+4. WHEN バリデーション処理が開始された場合、THE System SHALL Import_Jobのステータスを「validating」に遷移する
+5. IF バリデーション処理中に予期しないエラーが発生した場合、THEN THE System SHALL Import_Jobのステータスを「failed」に遷移し、エラーメッセージを記録する
+6. WHEN バリデーションが実行された場合、THE Audit_Log SHALL 操作種別「validate」・対象ジョブID・タイムスタンプを記録する
+
+### 要件 3: エラー表示
+
+**ユーザーストーリー:** 業務部門の担当者として、バリデーションエラーの詳細を確認したい。それにより、ソースファイルの修正箇所を特定できる。
+
+#### 受入条件
+
+1. WHEN エラー一覧が要求された場合、THE System SHALL 行番号・列名・エラー種別・期待値・実際の値・エラーメッセージをページネーション付きで返す
+2. WHEN 列名またはエラー種別でフィルタが指定された場合、THE System SHALL 指定条件に一致するエラーのみを返す

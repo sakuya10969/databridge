@@ -1,0 +1,107 @@
+# 実装計画: 帳票テンプレート管理
+
+## 概要
+
+Reportサブシステムの帳票テンプレート管理機能を段階的に実装する。
+帳票テンプレートのCRUD（作成・一覧・詳細・更新・削除）およびフィールド定義管理のAPI・画面を構築する。
+shared-foundation（FastAPI基盤、SQLAlchemy、ドメイン例外、AuditService）が構築済みの前提とする。
+
+## タスク
+
+- [ ] 1. Reportテンプレートドメイン層を実装する
+  - [ ] 1.1 ReportTemplate・ReportTemplateFieldエンティティとEnumを定義する
+    - `server/app/domain/entities/report_template.py` に ReportTemplate dataclass と ReportType enum を定義
+    - `server/app/domain/entities/report_template_field.py` に ReportTemplateField dataclass を定義
+    - _Requirements: 1.1, 2.1_
+
+  - [ ] 1.2 IReportTemplateRepositoryインターフェースを定義する
+    - `server/app/domain/repositories/i_report_template_repository.py` に IReportTemplateRepository ABC を定義
+    - _Requirements: 全体基盤_
+
+- [ ] 2. Reportテンプレートインフラストラクチャ層を実装する
+  - [ ] 2.1 Report系SQLAlchemyテーブルモデルを定義する
+    - `server/app/infrastructure/database/models.py` に ReportTemplateModel, ReportTemplateFieldModel を追加定義
+    - docs/database-design.md のReport系テーブル定義に準拠する
+    - _Requirements: 全体基盤_
+
+  - [ ] 2.2 Reportテンプレート用マイグレーションを作成する
+    - `uv run alembic revision --autogenerate -m "create report template tables"` でマイグレーション生成
+    - report_templates → report_template_fields の順序でテーブル作成
+    - _Requirements: 全体基盤_
+
+  - [ ] 2.3 ReportTemplateRepositoryを実装する
+    - `server/app/infrastructure/repositories/report_template_repository.py` に ReportTemplateRepository を実装
+    - テンプレート+フィールドの一括保存・取得・更新・物理削除・論理削除・ジョブ存在チェック
+    - _Requirements: 1.1-1.8, 2.1-2.3_
+
+- [ ] 3. Reportテンプレートアプリケーション層を実装する
+  - [ ] 3.1 ReportTemplateServiceを実装する
+    - `server/app/application/report_template_service.py` に ReportTemplateService を実装
+    - create_template: 名前重複チェック、フィールドキー重複チェック、書式タイプ検証、監査ログ記録
+    - get_template, list_templates, update_template, delete_template
+    - _Requirements: 1.1-1.8, 2.1-2.3_
+
+  - [ ]* 3.2 帳票テンプレート保存・取得一致のプロパティテストを作成する
+    - **Property 1: 帳票テンプレートの保存と取得の一致**
+    - **Validates: Requirements 1.1, 1.2, 1.3, 2.1**
+
+  - [ ]* 3.3 帳票テンプレート名一意性のプロパティテストを作成する
+    - **Property 2: 帳票テンプレート名の一意性**
+    - **Validates: Requirements 1.7**
+
+  - [ ]* 3.4 フィールドキー一意性のプロパティテストを作成する
+    - **Property 3: フィールドキーの一意性**
+    - **Validates: Requirements 2.2**
+
+  - [ ]* 3.5 書式タイプ検証のプロパティテストを作成する
+    - **Property 4: 書式タイプの検証**
+    - **Validates: Requirements 2.3**
+
+- [ ] 4. Reportテンプレートプレゼンテーション層を実装する
+  - [ ] 4.1 Report用Pydanticスキーマを定義する
+    - `server/app/presentation/report_templates/__init__.py`, `server/app/presentation/report_templates/schemas.py` を作成
+    - リクエスト: ReportTemplateFieldCreate, ReportTemplateCreateRequest, ReportTemplateUpdateRequest
+    - レスポンス: ReportTemplateFieldResponse, ReportTemplateResponse, ReportTemplateListResponse
+    - _Requirements: 全エンドポイント_
+
+  - [ ] 4.2 Report用DI設定を追加する
+    - `server/app/presentation/dependencies.py` に ReportTemplateService のファクトリ関数を追加
+    - _Requirements: 全体基盤_
+
+  - [ ] 4.3 帳票テンプレートAPIエンドポイントを実装する
+    - `server/app/presentation/report_templates/router.py` に APIRouter を定義
+    - POST /api/v1/report-templates, GET /api/v1/report-templates, GET /api/v1/report-templates/{template_id}
+    - PUT /api/v1/report-templates/{template_id}, DELETE /api/v1/report-templates/{template_id}
+    - ルーター集約に追加
+    - _Requirements: 1.1-1.8, 2.1-2.3_
+
+- [ ] 5. フロントエンド（帳票テンプレート管理）を実装する
+  - [ ] 5.1 Report系エンティティ型定義を作成する
+    - `client/app/entities/report-template/types.ts` に ReportTemplate型、ReportTemplateField型、ReportType enum を定義
+    - _Requirements: 全エンティティ_
+
+  - [ ] 5.2 report-template feature を実装する
+    - `client/app/features/report-template/api/` にCRUD API（fetch, save, update, delete）を実装
+    - `client/app/features/report-template/hooks/use-report-templates.ts` に useQuery ベースのフックを実装
+    - `client/app/features/report-template/hooks/use-report-template-form.ts` に react-hook-form + Zod ベースのフォーム管理フックを実装
+    - _Requirements: 1.1-1.7, 2.1-2.3_
+
+  - [ ] 5.3 report-template-form・report-field-editor widget を実装する
+    - `client/app/widgets/report-template-form/report-template-form.tsx` に帳票テンプレート作成・編集フォームを実装
+    - `client/app/widgets/report-field-editor/report-field-editor.tsx` に帳票フィールド定義エディタを実装（動的フィールド追加・削除・並び替え）
+    - _Requirements: 1.1, 1.4, 2.1, 2.2, 2.3_
+
+  - [ ] 5.4 帳票テンプレート画面を実装する
+    - `client/app/routes/report-templates.tsx` にテンプレート一覧画面を実装
+    - `client/app/routes/report-templates.new.tsx` にテンプレート作成画面を実装
+    - `client/app/routes/report-templates.$templateId.tsx` にテンプレート詳細・編集画面を実装
+    - ルート定義・サイドバーナビゲーションを更新
+    - _Requirements: 1.1-1.8_
+
+- [ ] 6. チェックポイント - 帳票テンプレート管理完了
+  - 全テストが通ることを確認する。不明点があればユーザーに質問する。
+
+## 備考
+
+- `*` マーク付きタスクはオプション
+- report_jobsテーブルはreport-generation specで作成するため、delete_templateのジョブ存在チェックはreport-generation実装後に完全動作する

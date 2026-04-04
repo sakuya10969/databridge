@@ -1,0 +1,111 @@
+# 実装計画: 共通基盤（Shared Foundation）
+
+## 概要
+
+Import・Report両サブシステムが依存する共通基盤を構築する。
+バックエンド基盤（FastAPI、SQLAlchemy、Alembic、ドメイン例外、共通スキーマ、例外ハンドラ、監査ログ）と
+フロントエンド基盤（APIクライアント、共通UI、レイアウト、プロバイダ）を段階的に実装する。
+
+## タスク
+
+- [ ] 1. バックエンドアプリケーション基盤を構築する
+  - [ ] 1.1 FastAPIアプリケーション基盤を構築する
+    - `server/app/__init__.py` を作成
+    - `server/app/infrastructure/config.py` に pydantic-settings で設定クラスを定義（DATABASE_URL, UPLOAD_DIR, REPORT_OUTPUT_DIR, MAX_FILE_SIZE等）
+    - `server/main.py` を FastAPI アプリケーションに書き換え（CORSミドルウェア、ルーター集約）
+    - `server/app/presentation/__init__.py`, `server/app/presentation/router.py` を作成（APIRouter集約、`/api/v1` プレフィックス）
+    - _Requirements: 1.1, 1.2_
+
+  - [ ] 1.2 SQLAlchemyセッション管理を構築する
+    - `server/app/infrastructure/database/__init__.py` を作成
+    - `server/app/infrastructure/database/session.py` に async engine・async sessionmaker・get_session依存関数を定義
+    - DATABASE_URL は config.py から取得する
+    - _Requirements: 1.3_
+
+  - [ ] 1.3 Alembicマイグレーション環境を構築する
+    - `alembic init server/alembic` で初期化
+    - `server/alembic/env.py` を async 対応に修正し、SQLAlchemy models の MetaData を target_metadata に設定
+    - `server/alembic.ini` の sqlalchemy.url を config.py の DATABASE_URL に合わせる
+    - _Requirements: 1.4_
+
+- [ ] 2. ドメイン例外と共通スキーマを定義する
+  - [ ] 2.1 ドメイン例外クラスを定義する
+    - `server/app/domain/__init__.py` を作成
+    - `server/app/domain/exceptions.py` に全ドメイン例外を定義
+    - DomainError, ParseError, ValidationError, DataImportError, JobNotFoundError, InvalidStatusTransitionError, TemplateNotFoundError, DuplicateTemplateNameError, ReportGenerationError, ReportOutputNotFoundError, DuplicateFieldKeyError, InvalidFilterError
+    - _Requirements: 2.2_
+
+  - [ ] 2.2 共通Pydanticレスポンススキーマを定義する
+    - `server/app/presentation/common_schemas.py` に ApiResponse[T]（data + meta）, ErrorResponse（error.code + message + details）, PaginationMeta を定義
+    - _Requirements: 3.1, 3.2, 3.3_
+
+  - [ ] 2.3 例外ハンドラを実装する
+    - `server/app/presentation/error_handlers.py` にドメイン例外→HTTPレスポンス変換ハンドラを実装
+    - 全ドメイン例外のHTTPステータス・エラーコードマッピングを設定
+    - FastAPIアプリに例外ハンドラを登録する
+    - _Requirements: 2.1, 2.3_
+
+- [ ] 3. 監査ログ機能を実装する
+  - [ ] 3.1 AuditLogエンティティとリポジトリインターフェースを定義する
+    - `server/app/domain/entities/__init__.py`, `server/app/domain/entities/audit_log.py` に AuditLog dataclass を定義
+    - `server/app/domain/repositories/__init__.py`, `server/app/domain/repositories/i_audit_repository.py` に IAuditRepository ABC を定義
+    - _Requirements: 4.1, 4.3_
+
+  - [ ] 3.2 AuditLogModelとリポジトリ具象を実装する
+    - `server/app/infrastructure/database/models.py` に AuditLogModel を定義
+    - `server/app/infrastructure/repositories/__init__.py`, `server/app/infrastructure/repositories/audit_repository.py` に AuditRepository を実装
+    - _Requirements: 4.1, 4.2, 4.3_
+
+  - [ ] 3.3 初期マイグレーション（audit_logs）を作成する
+    - `uv run alembic revision --autogenerate -m "create audit_logs table"` でマイグレーション生成
+    - _Requirements: 4.1_
+
+  - [ ] 3.4 AuditServiceを実装する
+    - `server/app/application/__init__.py`, `server/app/application/audit_service.py` に AuditService を実装
+    - log(), list_logs() メソッド
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+
+  - [ ] 3.5 監査ログAPIエンドポイントを実装する
+    - `server/app/presentation/audit_logs/__init__.py`, `server/app/presentation/audit_logs/schemas.py`, `server/app/presentation/audit_logs/router.py` を作成
+    - GET /api/v1/audit-logs（ページネーション、operator/action/resource_typeフィルタ）
+    - DI（依存性注入）ファクトリを `server/app/presentation/dependencies.py` に定義
+    - ルーター集約に追加
+    - _Requirements: 4.1, 4.2_
+
+  - [ ]* 3.6 監査ログのプロパティテストを作成する
+    - **Property 1: 監査ログの不変性**
+    - **Property 2: 監査ログのフィルタリング**
+    - hypothesis で監査ログの不変性とフィルタリングの正確性を検証
+    - **Validates: Requirements 4.1, 4.2, 4.3**
+
+- [ ] 4. フロントエンド共通基盤を構築する
+  - [ ] 4.1 共通APIクライアントを構築する
+    - `client/app/shared/api/client.ts` に axios インスタンスを作成（baseURL: /api/v1、インターセプターでエラー共通処理）
+    - `client/app/shared/api/types.ts` に ApiResponse<T>、ErrorResponse、PaginationMeta 型を定義
+    - _Requirements: 5.1_
+
+  - [ ] 4.2 QueryClientプロバイダを構築する
+    - `client/app/providers/query-client.tsx` に TanStack Query の QueryClientProvider を作成
+    - `client/app/root.tsx` にプロバイダを組み込む（Toaster含む）
+    - _Requirements: 5.2_
+
+  - [ ] 4.3 アプリケーションレイアウトを作成する
+    - `client/app/layouts/app-layout.tsx` にサイドバー + ヘッダー + メインコンテンツのレイアウトを作成
+    - サイドバーにImport系・Report系ナビゲーションを配置
+    - `client/app/routes.ts` にレイアウトを適用するルート定義を更新
+    - _Requirements: 5.3_
+
+  - [ ] 4.4 共通UIコンポーネントを作成する
+    - `client/app/shared/ui/data-table.tsx` に TanStack Table 汎用ラッパーを作成（ソート・ページネーション対応）
+    - `client/app/shared/ui/loading-spinner.tsx` にローディング表示コンポーネントを作成
+    - `client/app/shared/ui/empty-state.tsx` に空状態表示コンポーネントを作成
+    - `client/app/shared/ui/confirm-dialog.tsx` に確認ダイアログコンポーネントを作成
+    - _Requirements: 5.4_
+
+  - [ ] 4.5 共通ユーティリティを作成する
+    - `client/app/shared/utils/format-date.ts` に日時フォーマット関数を作成
+    - `client/app/shared/utils/format-file-size.ts` にファイルサイズフォーマット関数を作成
+    - _Requirements: 5.5_
+
+- [ ] 5. チェックポイント - 共通基盤完了
+  - 全テストが通ることを確認する。不明点があればユーザーに質問する。

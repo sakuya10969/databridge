@@ -1,0 +1,70 @@
+# 要件定義書: 共通基盤（Shared Foundation）
+
+## はじめに
+
+本ドキュメントは「業務データ取り込み・帳票出力基盤」の共通基盤のMVP機能要件を定義する。
+Import・Report両サブシステムが依存するバックエンド基盤（FastAPI、SQLAlchemy、Alembic、ドメイン例外、共通レスポンス、例外ハンドラ）、
+監査ログ機能、およびフロントエンド共通基盤（APIクライアント、共通UI、レイアウト、プロバイダ）を構築する。
+
+## 用語集
+
+- **Audit_Log**: 操作者・操作種別・対象リソース・タイムスタンプを記録する監査ログ。Import・Report両方のイベントを統一的に記録する
+- **ApiResponse**: 成功時の統一レスポンス形式（data + meta）
+- **ErrorResponse**: エラー時の統一レスポンス形式（error.code + message + details）
+- **DomainError**: ドメイン例外の基底クラス
+
+## 要件
+
+### 要件 1: バックエンドアプリケーション基盤
+
+**ユーザーストーリー:** 開発者として、FastAPIアプリケーションの共通基盤を構築したい。それにより、Import・Report両機能の開発基盤を統一できる。
+
+#### 受入条件
+
+1. WHEN FastAPIアプリケーションが起動された場合、THE System SHALL CORSミドルウェアが設定され、`/api/v1` プレフィックスでAPIルーティングが機能する
+2. WHEN 環境設定が必要な場合、THE System SHALL pydantic-settingsによる設定クラス（DATABASE_URL, UPLOAD_DIR, MAX_FILE_SIZE等）から値を取得する
+3. WHEN データベース接続が必要な場合、THE System SHALL SQLAlchemy async engine・async sessionmakerによるセッション管理を提供する
+4. WHEN スキーマ変更が必要な場合、THE System SHALL Alembicによるマイグレーション環境が利用可能である
+
+### 要件 2: ドメイン例外と例外ハンドラ
+
+**ユーザーストーリー:** 開発者として、統一されたエラーハンドリング基盤を利用したい。それにより、Import・Report両機能で一貫したエラーレスポンスを返せる。
+
+#### 受入条件
+
+1. WHEN ドメイン例外が発生した場合、THE System SHALL 例外の種類に応じた適切なHTTPステータスコードとエラーコードを含むErrorResponseを返す
+2. THE System SHALL 以下のドメイン例外を定義する: DomainError（基底）, ParseError, ValidationError, DataImportError, JobNotFoundError, InvalidStatusTransitionError, TemplateNotFoundError, DuplicateTemplateNameError
+3. WHEN 予期しない例外が発生した場合、THE System SHALL 500ステータスとINTERNAL_ERRORコードを返し、スタックトレースをログに記録する
+
+### 要件 3: 共通レスポンス形式
+
+**ユーザーストーリー:** 開発者として、統一されたAPIレスポンス形式を利用したい。それにより、フロントエンドでの共通処理が容易になる。
+
+#### 受入条件
+
+1. WHEN API呼び出しが成功した場合、THE System SHALL `{"data": {...}, "meta": {...}}` 形式のレスポンスを返す
+2. WHEN API呼び出しが失敗した場合、THE System SHALL `{"error": {"code": "...", "message": "...", "details": [...]}}` 形式のレスポンスを返す
+3. WHEN ページネーションが必要な場合、THE System SHALL metaにtotal・page・per_pageを含むPaginationMetaを返す
+
+### 要件 4: 監査ログ
+
+**ユーザーストーリー:** 管理者として、Import・Report両方の操作履歴を統一的に確認したい。それにより、監査対応とセキュリティ管理を実現できる。
+
+#### 受入条件
+
+1. WHEN 監査ログ一覧が要求された場合、THE Audit_Log SHALL 操作者名・操作種別・対象リソース種別・対象リソースID・タイムスタンプをページネーション付きで返す
+2. WHEN 操作者名・操作種別・リソース種別でフィルタが指定された場合、THE Audit_Log SHALL 指定条件に一致するログのみを返す
+3. THE Audit_Log SHALL 追記のみを許可し、既存ログの更新・削除を禁止する
+4. THE Audit_Log SHALL Import系・Report系の全イベントを統一的に記録する
+
+### 要件 5: フロントエンド共通基盤
+
+**ユーザーストーリー:** 開発者として、フロントエンドの共通基盤を構築したい。それにより、Import・Report両画面の開発基盤を統一できる。
+
+#### 受入条件
+
+1. WHEN API通信が必要な場合、THE System SHALL axiosインスタンス（baseURL: /api/v1）とエラーインターセプターを提供する
+2. WHEN サーバー状態管理が必要な場合、THE System SHALL TanStack QueryのQueryClientProviderを提供する
+3. WHEN 画面レイアウトが必要な場合、THE System SHALL サイドバー + ヘッダー + メインコンテンツのアプリケーションレイアウトを提供する
+4. WHEN 共通UIが必要な場合、THE System SHALL TanStack Table汎用ラッパー・ローディング表示・空状態表示・確認ダイアログを提供する
+5. WHEN 日時・ファイルサイズの表示が必要な場合、THE System SHALL フォーマットユーティリティを提供する

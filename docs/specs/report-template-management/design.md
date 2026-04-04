@@ -1,0 +1,218 @@
+# 設計書: 帳票テンプレート管理
+
+## 概要
+
+Reportサブシステムの帳票テンプレート管理機能。帳票テンプレートのCRUD（作成・一覧・詳細・更新・削除）およびフィールド定義管理を提供する。
+
+依存: shared-foundation（FastAPI基盤、SQLAlchemy、ドメイン例外、AuditService）
+
+## アーキテクチャ
+
+### バックエンド追加コンポーネント
+
+```
+server/app/
+  domain/entities/
+    report_template.py           ReportTemplate dataclass, ReportType enum
+    report_template_field.py     ReportTemplateField dataclass
+  domain/repositories/
+    i_report_template_repository.py  IReportTemplateRepository ABC
+  infrastructure/database/
+    models.py                    ReportTemplateModel, ReportTemplateFieldModel 追加
+  infrastructure/repositories/
+    report_template_repository.py ReportTemplateRepository具象
+  application/
+    report_template_service.py   ReportTemplateService
+  presentation/report_templates/
+    router.py                    CRUD エンドポイント
+    schemas.py                   リクエスト/レスポンススキーマ
+```
+
+### フロントエンド追加コンポーネント
+
+```
+client/app/
+  entities/report-template/types.ts    ReportTemplate型, ReportTemplateField型, ReportType enum
+  features/report-template/            useReportTemplates hook, CRUD API
+  widgets/report-template-form/        テンプレート作成・編集フォーム
+  widgets/report-field-editor/         フィールド定義エディタ
+  routes/report-templates.tsx          テンプレート一覧画面
+  routes/report-templates.new.tsx      テンプレート作成画面
+  routes/report-templates.$templateId.tsx テンプレート詳細・編集画面
+```
+
+## コンポーネントとインターフェース
+
+### バックエンド
+
+#### domain層
+
+**エンティティ:**
+
+```python
+@dataclass
+class ReportTemplate:
+    id: UUID
+    name: str
+    description: str | None
+    report_type: ReportType          # list / single / summary
+    default_output_format: str       # pdf / xlsx / csv
+    target_resource_type: str
+    layout_definition: dict
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+@dataclass
+class ReportTemplateField:
+    id: UUID
+    report_template_id: UUID
+    field_key: str
+    label: str
+    source_path: str
+    display_order: int
+    format_type: str       # string/integer/decimal/date/datetime/currency/percentage
+    format_pattern: str | None
+    is_required: bool
+    default_value: str | None
+    width: int | None
+    aggregation: str | None  # sum/count/avg/min/max
+```
+
+**Enum:**
+
+```python
+class ReportType(str, Enum):
+    LIST = "list"
+    SINGLE = "single"
+    SUMMARY = "summary"
+```
+
+**リポジトリインターフェース:**
+
+```python
+class IReportTemplateRepository(ABC):
+    async def create(self, template: ReportTemplate, fields: list[ReportTemplateField]) -> ReportTemplate: ...
+    async def get_by_id(self, template_id: UUID) -> ReportTemplate | None: ...
+    async def get_by_name(self, name: str) -> ReportTemplate | None: ...
+    async def list_templates(self, report_type: str | None, page: int, per_page: int) -> tuple[list[ReportTemplate], int]: ...
+    async def update(self, template: ReportTemplate, fields: list[ReportTemplateField] | None) -> ReportTemplate: ...
+    async def delete(self, template_id: UUID) -> None: ...
+    async def soft_delete(self, template_id: UUID) -> None: ...
+    async def has_jobs(self, template_id: UUID) -> bool: ...
+    async def get_fields(self, template_id: UUID) -> list[ReportTemplateField]: ...
+```
+
+#### application層
+
+**ReportTemplateService:**
+
+```python
+class ReportTemplateService:
+    def __init__(self, template_repo: IReportTemplateRepository, audit_repo: IAuditRepository): ...
+
+    async def create_template(self, name, description, report_type, default_output_format,
+                              target_resource_type, layout_definition, fields, operator) -> ReportTemplate: ...
+    async def get_template(self, template_id) -> ReportTemplate: ...
+    async def list_templates(self, report_type, page, per_page) -> tuple[list[ReportTemplate], int]: ...
+    async def update_template(self, template_id, ..., operator) -> ReportTemplate: ...
+    async def delete_template(self, template_id, operator) -> None: ...
+```
+
+#### presentation層
+
+**エンドポイント:**
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| POST | /api/v1/report-templates | テンプレート作成 |
+| GET | /api/v1/report-templates | テンプレート一覧 |
+| GET | /api/v1/report-templates/{template_id} | テンプレート詳細 |
+| PUT | /api/v1/report-templates/{template_id} | テンプレート更新 |
+| DELETE | /api/v1/report-templates/{template_id} | テンプレート削除 |
+
+## データモデル
+
+### report_templates
+
+| フィールド | 型 | 制約 | 説明 |
+|-----------|-----|------|------|
+| id | UUID | PK | テンプレートID |
+| name | VARCHAR(255) | NOT NULL, UNIQUE | テンプレート名 |
+| description | TEXT | NULL | 説明 |
+| report_type | VARCHAR(20) | NOT NULL, CHECK IN ('list','single','summary') | 帳票種別 |
+| default_output_format | VARCHAR(10) | NOT NULL, DEFAULT 'pdf' | デフォルト出力形式 |
+| target_resource_type | VARCHAR(255) | NOT NULL | データソースリソース種別 |
+| layout_definition | JSONB | NOT NULL | レイアウト定義 |
+| is_active | BOOLEAN | NOT NULL, DEFAULT true | 有効フラグ |
+| created_at | TIMESTAMPTZ | NOT NULL | 作成日時 |
+| updated_at | TIMESTAMPTZ | NOT NULL | 更新日時 |
+
+### report_template_fields
+
+| フィールド | 型 | 制約 | 説明 |
+|-----------|-----|------|------|
+| id | UUID | PK | フィールドID |
+| report_template_id | UUID | NOT NULL, FK→report_templates CASCADE | テンプレートID |
+| field_key | VARCHAR(255) | NOT NULL | フィールドキー |
+| label | VARCHAR(255) | NOT NULL | 表示ラベル |
+| source_path | VARCHAR(512) | NOT NULL | データソースパス |
+| display_order | INTEGER | NOT NULL, DEFAULT 0 | 表示順序 |
+| format_type | VARCHAR(20) | NOT NULL, DEFAULT 'string' | 書式タイプ |
+| format_pattern | VARCHAR(255) | NULL | 書式パターン |
+| is_required | BOOLEAN | NOT NULL, DEFAULT true | 必須フラグ |
+| default_value | TEXT | NULL | デフォルト値 |
+| width | INTEGER | NULL | 列幅 |
+| aggregation | VARCHAR(20) | NULL | 集計関数 |
+
+UNIQUE: (report_template_id, field_key)
+
+## 正確性プロパティ
+
+### Property 1: 帳票テンプレートの保存と取得の一致
+
+*For any* 有効な帳票テンプレート定義に対して、作成後に取得したテンプレートは元の定義と同一の内容を持ち、フィールド定義も全て含まれ、一覧にも含まれる
+
+**Validates: Requirements 1.1, 1.2, 1.3, 2.1**
+
+### Property 2: 帳票テンプレート名の一意性
+
+*For any* 既存帳票テンプレートと同一名のテンプレート作成要求に対して、作成は拒否されDuplicateTemplateNameErrorが返される
+
+**Validates: Requirements 1.7**
+
+### Property 3: フィールドキーの一意性
+
+*For any* 同一テンプレート内でフィールドキーが重複するフィールド定義に対して、保存は拒否されDuplicateFieldKeyErrorが返される
+
+**Validates: Requirements 2.2**
+
+### Property 4: 書式タイプの検証
+
+*For any* 有効な書式タイプ以外の値を含むフィールド定義に対して、保存は拒否されバリデーションエラーが返される
+
+**Validates: Requirements 2.3**
+
+### Property 5: 帳票テンプレート更新の正確性
+
+*For any* 有効な帳票テンプレート更新要求に対して、指定されたフィールドのみが更新され、updated_atが更新前より新しくなる
+
+**Validates: Requirements 1.4**
+
+### Property 6: 帳票テンプレート削除の正確性
+
+*For any* 帳票テンプレート削除要求に対して、関連Report_Jobが存在しない場合は物理削除、存在する場合はis_active=falseの論理削除が行われる
+
+**Validates: Requirements 1.5, 1.6**
+
+## テスト戦略
+
+### テストフレームワーク
+
+- バックエンド: pytest + hypothesis
+- フロントエンド: vitest + @testing-library/react
+
+### プロパティベーステスト
+
+- ライブラリ: hypothesis（Python）
+- タグ形式: **Feature: report-template-management, Property {number}: {property_text}**
