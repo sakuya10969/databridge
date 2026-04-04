@@ -11,10 +11,10 @@ PostgreSQL 17をDocker Composeで運用する。全テーブルのPKはUUID（`g
 |------|-----|
 | ホスト | localhost |
 | ポート | 5432 |
-| ユーザー | app |
-| パスワード | app |
-| データベース名 | data_platform |
-| 接続URL | `postgresql://app:app@localhost:5432/data_platform` |
+| ユーザー | admin |
+| パスワード | password |
+| データベース名 | databridge |
+| 接続URL | `postgresql://admin:password@localhost:5432/databridge` |
 
 本システムはImport系テーブル（5テーブル）とReport系テーブル（4テーブル）、および共通のaudit_logsで構成する。
 
