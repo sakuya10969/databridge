@@ -1,5 +1,16 @@
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useFieldArray, useFormContext, Controller } from "react-hook-form";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Card, CardContent } from "~/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 const FORMAT_TYPES = [
   "string", "integer", "decimal", "date", "datetime", "currency", "percentage",
@@ -12,10 +23,11 @@ export function ReportFieldEditor() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700">フィールド定義</h3>
+        <h3 className="text-sm font-medium">フィールド定義</h3>
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={() =>
             append({
               field_key: "",
@@ -31,61 +43,84 @@ export function ReportFieldEditor() {
       </div>
 
       {fields.length === 0 && (
-        <p className="text-sm text-gray-400">フィールドがありません</p>
+        <p className="text-sm text-muted-foreground">フィールドがありません</p>
       )}
 
       {fields.map((field, index) => (
-        <div key={field.id} className="border rounded-md p-3 space-y-2">
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="text-xs text-gray-500">フィールドキー</label>
-              <input
-                {...register(`fields.${index}.field_key`)}
-                className="w-full border rounded px-2 py-1 text-sm"
-                placeholder="field_key"
-              />
+        <Card key={field.id}>
+          <CardContent className="pt-4 space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">フィールドキー</Label>
+                <Input
+                  {...register(`fields.${index}.field_key`)}
+                  placeholder="field_key"
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ラベル</Label>
+                <Input
+                  {...register(`fields.${index}.label`)}
+                  placeholder="表示名"
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ソースパス</Label>
+                <Input
+                  {...register(`fields.${index}.source_path`)}
+                  placeholder="column_name"
+                  className="h-7 text-xs"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-gray-500">ラベル</label>
-              <input
-                {...register(`fields.${index}.label`)}
-                className="w-full border rounded px-2 py-1 text-sm"
-                placeholder="表示名"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">ソースパス</label>
-              <input
-                {...register(`fields.${index}.source_path`)}
-                className="w-full border rounded px-2 py-1 text-sm"
-                placeholder="column_name"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div>
-              <label className="text-xs text-gray-500">書式タイプ</label>
-              <select
-                {...register(`fields.${index}.format_type`)}
-                className="border rounded px-2 py-1 text-sm"
+            <div className="flex items-end gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs">書式タイプ</Label>
+                <Controller
+                  control={control}
+                  name={`fields.${index}.format_type`}
+                  render={({ field: f }) => (
+                    <Select value={f.value} onValueChange={f.onChange}>
+                      <SelectTrigger className="h-7 w-36 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FORMAT_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="flex items-center gap-2 pb-0.5">
+                <Controller
+                  control={control}
+                  name={`fields.${index}.is_required`}
+                  render={({ field: f }) => (
+                    <Checkbox
+                      id={`is_required_${index}`}
+                      checked={f.value}
+                      onCheckedChange={f.onChange}
+                    />
+                  )}
+                />
+                <Label htmlFor={`is_required_${index}`} className="text-xs">必須</Label>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => remove(index)}
+                className="text-destructive hover:text-destructive ml-auto"
               >
-                {FORMAT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+                削除
+              </Button>
             </div>
-            <div className="flex items-center gap-1 mt-4">
-              <input type="checkbox" {...register(`fields.${index}.is_required`)} />
-              <label className="text-xs text-gray-500">必須</label>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => remove(index)}
-              className="mt-4 text-red-500 hover:text-red-700"
-            >
-              削除
-            </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );

@@ -8,6 +8,7 @@ import { MappingTable } from "~/widgets/mapping-table/mapping-table";
 import { TemplateSelector } from "~/widgets/template-selector/template-selector";
 import { useColumnMapping } from "~/features/mapping/hooks/use-column-mapping";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useState } from "react";
 
 export default function JobMappingPage() {
@@ -31,33 +32,37 @@ export default function JobMappingPage() {
   if (isLoading) return <LoadingSpinner />;
   if (!job) return <p>ジョブが見つかりません</p>;
 
-  const sourceColumns = job.total_rows != null
-    ? [] // Will be filled from parse result. Use a dummy for now.
-    : [];
+  const sourceColumns = job.total_rows != null ? [] : [];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">列マッピング設定</h1>
-      <p className="text-sm text-gray-500">ジョブID: {jobId}</p>
+      <h1 className="text-2xl font-bold">列マッピング設定</h1>
 
-      <TemplateSelector value={templateId} onChange={setTemplateId} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">ジョブID: {jobId}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <TemplateSelector value={templateId} onChange={setTemplateId} />
 
-      <MappingTable
-        sourceColumns={sourceColumns}
-        isSaving={mutation.isPending}
-        onSave={(mappings) => {
-          mutation.mutate(
-            { job_id: jobId!, mappings, template_id: templateId },
-            {
-              onSuccess: () => {
-                toast.success("マッピングを保存しました");
-                navigate(`/jobs/${jobId}/validate`);
-              },
-              onError: (e) => toast.error(String(e)),
-            }
-          );
-        }}
-      />
+          <MappingTable
+            sourceColumns={sourceColumns}
+            isSaving={mutation.isPending}
+            onSave={(mappings) => {
+              mutation.mutate(
+                { job_id: jobId!, mappings, template_id: templateId },
+                {
+                  onSuccess: () => {
+                    toast.success("マッピングを保存しました");
+                    navigate(`/jobs/${jobId}/validate`);
+                  },
+                  onError: (e) => toast.error(String(e)),
+                }
+              );
+            }}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

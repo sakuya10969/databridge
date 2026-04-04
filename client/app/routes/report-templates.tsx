@@ -1,7 +1,6 @@
 import { Link } from "react-router";
-import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useReportTemplates, useDeleteReportTemplate } from "~/features/report-template/hooks/use-report-templates";
+import { useReportTemplates } from "~/features/report-template/hooks/use-report-templates";
 import { DataTable } from "~/shared/ui/data-table";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { EmptyState } from "~/shared/ui/empty-state";
@@ -14,7 +13,7 @@ const columns: ColumnDef<ReportTemplate, unknown>[] = [
     accessorKey: "name",
     header: "テンプレート名",
     cell: ({ row }) => (
-      <Link to={`/report-templates/${row.original.id}`} className="text-blue-600 hover:underline">
+      <Link to={`/report-templates/${row.original.id}`} className="text-primary hover:underline">
         {row.original.name}
       </Link>
     ),
@@ -31,14 +30,13 @@ const columns: ColumnDef<ReportTemplate, unknown>[] = [
 
 export default function ReportTemplatesPage() {
   const { data, isLoading } = useReportTemplates();
-  const deleteMutation = useDeleteReportTemplate();
 
   const templates = data?.data ?? [];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">帳票テンプレート</h1>
+        <h1 className="text-2xl font-bold">帳票テンプレート</h1>
         <Link to="/report-templates/new">
           <Button>テンプレート作成</Button>
         </Link>

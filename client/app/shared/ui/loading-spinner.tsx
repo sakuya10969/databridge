@@ -1,10 +1,11 @@
+import { Skeleton } from "~/components/ui/skeleton";
+
 export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const sizeClass = { sm: "h-4 w-4", md: "h-8 w-8", lg: "h-12 w-12" }[size];
+  const heights = { sm: "h-4", md: "h-8", lg: "h-12" };
   return (
-    <div className="flex items-center justify-center">
-      <div
-        className={`${sizeClass} animate-spin rounded-full border-2 border-gray-300 border-t-blue-600`}
-      />
+    <div className="space-y-2">
+      <Skeleton className={`w-full ${heights[size]} rounded-md`} />
+      <Skeleton className={`w-3/4 ${heights[size]} rounded-md`} />
     </div>
   );
 }

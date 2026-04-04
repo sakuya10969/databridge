@@ -6,6 +6,9 @@ import { DataTable } from "~/shared/ui/data-table";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Template } from "~/entities/template/types";
 import { formatDate } from "~/shared/utils/format-date";
@@ -15,7 +18,7 @@ const columns: ColumnDef<Template, unknown>[] = [
     accessorKey: "name",
     header: "テンプレート名",
     cell: ({ row }) => (
-      <Link to={`/templates/${row.original.id}`} className="text-blue-600 hover:underline">
+      <Link to={`/templates/${row.original.id}`} className="text-primary hover:underline">
         {row.original.name}
       </Link>
     ),
@@ -40,56 +43,66 @@ export default function TemplatesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">Importテンプレート</h1>
-        <Button onClick={() => setShowForm(!showForm)}>
+        <h1 className="text-2xl font-bold">Importテンプレート</h1>
+        <Button variant={showForm ? "outline" : "default"} onClick={() => setShowForm(!showForm)}>
           {showForm ? "キャンセル" : "テンプレート作成"}
         </Button>
       </div>
 
       {showForm && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            createMutation.mutate(
-              { ...form, column_definitions: [], operator: "anonymous" },
-              {
-                onSuccess: () => { toast.success("テンプレートを作成しました"); setShowForm(false); },
-                onError: (err) => toast.error(String(err)),
-              }
-            );
-          }}
-          className="border rounded-md p-4 space-y-3 bg-gray-50"
-        >
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">テンプレート名</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ターゲットテーブル</label>
-            <input
-              value={form.target_table}
-              onChange={(e) => setForm({ ...form, target_table: e.target.value })}
-              required
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">説明</label>
-            <input
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            />
-          </div>
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "作成中..." : "作成"}
-          </Button>
-        </form>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">テンプレート作成</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createMutation.mutate(
+                  { ...form, column_definitions: [], operator: "anonymous" },
+                  {
+                    onSuccess: () => {
+                      toast.success("テンプレートを作成しました");
+                      setShowForm(false);
+                    },
+                    onError: (err) => toast.error(String(err)),
+                  }
+                );
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-1">
+                <Label htmlFor="tmpl-name">テンプレート名</Label>
+                <Input
+                  id="tmpl-name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="tmpl-table">ターゲットテーブル</Label>
+                <Input
+                  id="tmpl-table"
+                  value={form.target_table}
+                  onChange={(e) => setForm({ ...form, target_table: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="tmpl-desc">説明</Label>
+                <Input
+                  id="tmpl-desc"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "作成中..." : "作成"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {isLoading && <LoadingSpinner />}

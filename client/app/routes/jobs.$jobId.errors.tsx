@@ -4,43 +4,66 @@ import { useErrors } from "~/features/validation/hooks/use-validation";
 import { ErrorTable } from "~/widgets/error-table/error-table";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { EmptyState } from "~/shared/ui/empty-state";
+import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Card, CardContent } from "~/components/ui/card";
+
+const ERROR_TYPE_OPTIONS = [
+  { value: "all", label: "全エラー種別" },
+  { value: "type_error", label: "型エラー" },
+  { value: "required_error", label: "必須エラー" },
+  { value: "unique_error", label: "重複エラー" },
+  { value: "pattern_error", label: "形式エラー" },
+];
 
 export default function JobErrorsPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const [page, setPage] = useState(1);
   const [columnName, setColumnName] = useState("");
-  const [errorType, setErrorType] = useState("");
+  const [errorType, setErrorType] = useState("all");
 
   const { data, isLoading } = useErrors(
     jobId!,
     page,
     columnName || undefined,
-    errorType || undefined
+    errorType === "all" ? undefined : errorType
   );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">エラー一覧</h1>
+      <h1 className="text-2xl font-bold">エラー一覧</h1>
 
-      <div className="flex gap-3">
-        <input
-          value={columnName}
-          onChange={(e) => setColumnName(e.target.value)}
-          placeholder="列名でフィルタ"
-          className="border border-gray-300 rounded px-3 py-1 text-sm"
-        />
-        <select
-          value={errorType}
-          onChange={(e) => setErrorType(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1 text-sm"
-        >
-          <option value="">全エラー種別</option>
-          <option value="type_error">型エラー</option>
-          <option value="required_error">必須エラー</option>
-          <option value="unique_error">重複エラー</option>
-          <option value="pattern_error">形式エラー</option>
-        </select>
-      </div>
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex gap-3">
+            <Input
+              value={columnName}
+              onChange={(e) => setColumnName(e.target.value)}
+              placeholder="列名でフィルタ"
+              className="max-w-48"
+            />
+            <Select value={errorType} onValueChange={(v) => { setErrorType(v); setPage(1); }}>
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ERROR_TYPE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {isLoading && <LoadingSpinner />}
       {data?.data && data.data.length === 0 && (
@@ -49,24 +72,26 @@ export default function JobErrorsPage() {
       {data?.data && data.data.length > 0 && <ErrorTable errors={data.data} />}
 
       {data?.meta && (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <button
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-2 py-1 border rounded disabled:opacity-50"
           >
             前へ
-          </button>
+          </Button>
           <span>
             {page} / {Math.ceil(data.meta.total / data.meta.per_page)} ページ
           </span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPage((p) => p + 1)}
             disabled={page * data.meta.per_page >= data.meta.total}
-            className="px-2 py-1 border rounded disabled:opacity-50"
           >
             次へ
-          </button>
+          </Button>
         </div>
       )}
     </div>

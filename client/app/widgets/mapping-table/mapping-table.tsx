@@ -1,5 +1,22 @@
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, Controller } from "react-hook-form";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Checkbox } from "~/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 import type { MappingFormItem } from "~/features/mapping/types";
 
 interface MappingTableProps {
@@ -29,54 +46,80 @@ export function MappingTable({ sourceColumns, onSave, isSaving }: MappingTablePr
   return (
     <form onSubmit={handleSubmit((data) => onSave(data.mappings))}>
       <div className="overflow-auto border rounded-md">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-600">ソース列名</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-600">ターゲット列名</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-600">データ型</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-600">NULL許可</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-600">一意</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-600">パターン</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ソース列名</TableHead>
+              <TableHead>ターゲット列名</TableHead>
+              <TableHead>データ型</TableHead>
+              <TableHead className="text-center">NULL許可</TableHead>
+              <TableHead className="text-center">一意</TableHead>
+              <TableHead>パターン</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {fields.map((field, index) => (
-              <tr key={field.id} className="border-t">
-                <td className="px-3 py-2 text-gray-700">{field.source_column}</td>
-                <td className="px-3 py-2">
-                  <input
+              <TableRow key={field.id}>
+                <TableCell className="text-muted-foreground">{field.source_column}</TableCell>
+                <TableCell>
+                  <Input
                     {...register(`mappings.${index}.target_column`)}
-                    className="w-full border border-gray-300 rounded px-2 py-1"
+                    className="h-7 text-xs"
                   />
-                </td>
-                <td className="px-3 py-2">
-                  <select
-                    {...register(`mappings.${index}.data_type`)}
-                    className="border border-gray-300 rounded px-2 py-1"
-                  >
-                    {DATA_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <input type="checkbox" {...register(`mappings.${index}.nullable`)} />
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <input type="checkbox" {...register(`mappings.${index}.is_unique`)} />
-                </td>
-                <td className="px-3 py-2">
-                  <input
+                </TableCell>
+                <TableCell>
+                  <Controller
+                    control={control}
+                    name={`mappings.${index}.data_type`}
+                    render={({ field: f }) => (
+                      <Select value={f.value} onValueChange={f.onChange}>
+                        <SelectTrigger className="h-7 w-28 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DATA_TYPES.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </TableCell>
+                <TableCell className="text-center">
+                  <Controller
+                    control={control}
+                    name={`mappings.${index}.nullable`}
+                    render={({ field: f }) => (
+                      <Checkbox
+                        checked={f.value}
+                        onCheckedChange={f.onChange}
+                      />
+                    )}
+                  />
+                </TableCell>
+                <TableCell className="text-center">
+                  <Controller
+                    control={control}
+                    name={`mappings.${index}.is_unique`}
+                    render={({ field: f }) => (
+                      <Checkbox
+                        checked={f.value}
+                        onCheckedChange={f.onChange}
+                      />
+                    )}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
                     {...register(`mappings.${index}.pattern`)}
                     placeholder="正規表現"
-                    className="w-full border border-gray-300 rounded px-2 py-1"
+                    className="h-7 text-xs"
                   />
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
       <div className="mt-4">
         <Button type="submit" disabled={isSaving}>

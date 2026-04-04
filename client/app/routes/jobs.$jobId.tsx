@@ -7,6 +7,7 @@ import { retryJob } from "~/features/import-job/api/retry-job";
 import { JobStatusBadge } from "~/widgets/job-status-badge/job-status-badge";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { formatDate } from "~/shared/utils/format-date";
 import { formatFileSize } from "~/shared/utils/format-file-size";
 
@@ -39,20 +40,51 @@ export default function JobDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">ジョブ詳細</h1>
+        <h1 className="text-2xl font-bold">ジョブ詳細</h1>
         <JobStatusBadge status={job.status} />
       </div>
 
-      <dl className="grid grid-cols-2 gap-4 text-sm">
-        <div><dt className="font-medium text-gray-500">ファイル名</dt><dd>{job.file_name}</dd></div>
-        <div><dt className="font-medium text-gray-500">ファイルサイズ</dt><dd>{formatFileSize(job.file_size)}</dd></div>
-        <div><dt className="font-medium text-gray-500">ファイル種別</dt><dd>{job.file_type}</dd></div>
-        <div><dt className="font-medium text-gray-500">総行数</dt><dd>{job.total_rows ?? "-"}</dd></div>
-        <div><dt className="font-medium text-gray-500">エラー件数</dt><dd>{job.error_count}</dd></div>
-        <div><dt className="font-medium text-gray-500">操作者</dt><dd>{job.operator}</dd></div>
-        <div><dt className="font-medium text-gray-500">作成日時</dt><dd>{formatDate(job.created_at)}</dd></div>
-        <div><dt className="font-medium text-gray-500">更新日時</dt><dd>{formatDate(job.updated_at)}</dd></div>
-      </dl>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">ジョブ情報</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <dt className="font-medium text-muted-foreground">ファイル名</dt>
+              <dd>{job.file_name}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">ファイルサイズ</dt>
+              <dd>{formatFileSize(job.file_size)}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">ファイル種別</dt>
+              <dd>{job.file_type}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">総行数</dt>
+              <dd>{job.total_rows ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">エラー件数</dt>
+              <dd>{job.error_count}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">操作者</dt>
+              <dd>{job.operator}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">作成日時</dt>
+              <dd>{formatDate(job.created_at)}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">更新日時</dt>
+              <dd>{formatDate(job.updated_at)}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
 
       <div className="flex gap-3">
         {job.status === "validating" && (

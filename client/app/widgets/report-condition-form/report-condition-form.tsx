@@ -1,7 +1,20 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
-const OUTPUT_FORMATS = ["pdf", "xlsx", "csv"] as const;
+const OUTPUT_FORMATS = [
+  { value: "pdf", label: "PDF (.pdf)" },
+  { value: "xlsx", label: "Excel (.xlsx)" },
+  { value: "csv", label: "CSV (.csv)" },
+] as const;
 
 export interface ReportConditionFormValues {
   output_format: "pdf" | "xlsx" | "csv";
@@ -13,12 +26,10 @@ interface ReportConditionFormProps {
   onSubmit: (values: ReportConditionFormValues) => void;
 }
 
-export function ReportConditionForm({
-  isSubmitting,
-  onSubmit,
-}: ReportConditionFormProps) {
+export function ReportConditionForm({ isSubmitting, onSubmit }: ReportConditionFormProps) {
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<ReportConditionFormValues>({
@@ -27,32 +38,34 @@ export function ReportConditionForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          出力形式
-        </label>
-        <select
-          {...register("output_format", { required: true })}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-        >
-          {OUTPUT_FORMATS.map((f) => (
-            <option key={f} value={f}>
-              {f.toUpperCase()}
-            </option>
-          ))}
-        </select>
+      <div className="space-y-1">
+        <Label>出力形式</Label>
+        <Controller
+          control={control}
+          name="output_format"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OUTPUT_FORMATS.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          依頼者
-        </label>
-        <input
+      <div className="space-y-1">
+        <Label htmlFor="requested_by">依頼者</Label>
+        <Input
+          id="requested_by"
           {...register("requested_by", { required: "依頼者を入力してください" })}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
         />
         {errors.requested_by && (
-          <p className="text-red-500 text-xs mt-1">{errors.requested_by.message}</p>
+          <p className="text-destructive text-xs">{errors.requested_by.message}</p>
         )}
       </div>
 

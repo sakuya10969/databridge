@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -6,8 +7,15 @@ import { createReportJob } from "~/features/report-job/api/report-job-api";
 import { ReportConditionForm } from "~/widgets/report-condition-form/report-condition-form";
 import type { ReportConditionFormValues } from "~/widgets/report-condition-form/report-condition-form";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
-import { useState } from "react";
 import { Label } from "~/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 export function meta() {
   return [{ title: "DataBridge - 帳票ジョブ作成" }];
@@ -35,40 +43,46 @@ export default function ReportJobNewPage() {
 
   return (
     <div className="max-w-lg space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">帳票出力ジョブ作成</h1>
+      <h1 className="text-2xl font-bold">帳票出力ジョブ作成</h1>
 
-      <div className="space-y-1">
-        <Label htmlFor="template_select">帳票テンプレート</Label>
-        <select
-          id="template_select"
-          value={templateId}
-          onChange={(e) => setTemplateId(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-        >
-          <option value="">テンプレートを選択...</option>
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">ジョブ設定</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="template_select">帳票テンプレート</Label>
+            <Select value={templateId} onValueChange={setTemplateId}>
+              <SelectTrigger id="template_select" className="w-full">
+                <SelectValue placeholder="テンプレートを選択..." />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <ReportConditionForm
-        isSubmitting={mutation.isPending}
-        onSubmit={(values: ReportConditionFormValues) => {
-          if (!templateId) {
-            toast.error("テンプレートを選択してください");
-            return;
-          }
-          mutation.mutate({
-            report_template_id: templateId,
-            output_format: values.output_format,
-            requested_by: values.requested_by,
-            filter_conditions: null,
-          });
-        }}
-      />
+          <ReportConditionForm
+            isSubmitting={mutation.isPending}
+            onSubmit={(values: ReportConditionFormValues) => {
+              if (!templateId) {
+                toast.error("テンプレートを選択してください");
+                return;
+              }
+              mutation.mutate({
+                report_template_id: templateId,
+                output_format: values.output_format,
+                requested_by: values.requested_by,
+                filter_conditions: null,
+              });
+            }}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

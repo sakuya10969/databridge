@@ -3,6 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchTemplate } from "~/features/template/api/fetch-templates";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { formatDate } from "~/shared/utils/format-date";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 
 export default function TemplateDetailPage() {
   const { templateId } = useParams<{ templateId: string }>();
@@ -18,40 +27,52 @@ export default function TemplateDetailPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">{template.name}</h1>
-      <dl className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <dt className="font-medium text-gray-500">ターゲットテーブル</dt>
-          <dd className="text-gray-800">{template.target_table}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">説明</dt>
-          <dd className="text-gray-800">{template.description ?? "-"}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">作成日時</dt>
-          <dd className="text-gray-800">{formatDate(template.created_at)}</dd>
-        </div>
-      </dl>
-      <h2 className="text-lg font-semibold text-gray-700">列定義</h2>
-      <table className="w-full text-sm border rounded-md">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-3 py-2 text-left">ソース列</th>
-            <th className="px-3 py-2 text-left">ターゲット列</th>
-            <th className="px-3 py-2 text-left">データ型</th>
-          </tr>
-        </thead>
-        <tbody>
-          {template.column_definitions.map((col, i) => (
-            <tr key={i} className="border-t">
-              <td className="px-3 py-2">{col.source_column}</td>
-              <td className="px-3 py-2">{col.target_column}</td>
-              <td className="px-3 py-2">{col.data_type}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h1 className="text-2xl font-bold">{template.name}</h1>
+
+      <Card>
+        <CardContent className="pt-4">
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <dt className="font-medium text-muted-foreground">ターゲットテーブル</dt>
+              <dd>{template.target_table}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">説明</dt>
+              <dd>{template.description ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">作成日時</dt>
+              <dd>{formatDate(template.created_at)}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">列定義</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ソース列</TableHead>
+                <TableHead>ターゲット列</TableHead>
+                <TableHead>データ型</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {template.column_definitions.map((col, i) => (
+                <TableRow key={i}>
+                  <TableCell>{col.source_column}</TableCell>
+                  <TableCell>{col.target_column}</TableCell>
+                  <TableCell>{col.data_type}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

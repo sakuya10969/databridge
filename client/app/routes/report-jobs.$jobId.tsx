@@ -7,6 +7,7 @@ import { JobStatusBadge } from "~/widgets/job-status-badge/job-status-badge";
 import { ReportDownloadButton } from "~/widgets/report-download-button/report-download-button";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { formatDate } from "~/shared/utils/format-date";
 
 export function meta() {
@@ -42,54 +43,61 @@ export default function ReportJobDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">帳票出力ジョブ詳細</h1>
+        <h1 className="text-2xl font-bold">帳票出力ジョブ詳細</h1>
         <JobStatusBadge status={job.status} />
       </div>
 
-      <dl className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <dt className="font-medium text-gray-500">ジョブID</dt>
-          <dd className="font-mono text-xs">{job.id}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">テンプレートID</dt>
-          <dd className="font-mono text-xs">{job.report_template_id}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">出力形式</dt>
-          <dd>{job.output_format.toUpperCase()}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">行数</dt>
-          <dd>{job.row_count ?? "-"}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">依頼者</dt>
-          <dd>{job.requested_by}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-500">作成日時</dt>
-          <dd>{formatDate(job.created_at)}</dd>
-        </div>
-        {job.started_at && (
-          <div>
-            <dt className="font-medium text-gray-500">開始日時</dt>
-            <dd>{formatDate(job.started_at)}</dd>
-          </div>
-        )}
-        {job.completed_at && (
-          <div>
-            <dt className="font-medium text-gray-500">完了日時</dt>
-            <dd>{formatDate(job.completed_at)}</dd>
-          </div>
-        )}
-        {job.error_message && (
-          <div className="col-span-2">
-            <dt className="font-medium text-gray-500">エラー</dt>
-            <dd className="text-red-600 text-xs">{job.error_message}</dd>
-          </div>
-        )}
-      </dl>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">ジョブ情報</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <dt className="font-medium text-muted-foreground">ジョブID</dt>
+              <dd className="font-mono text-xs">{job.id}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">テンプレートID</dt>
+              <dd className="font-mono text-xs">{job.report_template_id}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">出力形式</dt>
+              <dd>{job.output_format.toUpperCase()}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">行数</dt>
+              <dd>{job.row_count ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">依頼者</dt>
+              <dd>{job.requested_by}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">作成日時</dt>
+              <dd>{formatDate(job.created_at)}</dd>
+            </div>
+            {job.started_at && (
+              <div>
+                <dt className="font-medium text-muted-foreground">開始日時</dt>
+                <dd>{formatDate(job.started_at)}</dd>
+              </div>
+            )}
+            {job.completed_at && (
+              <div>
+                <dt className="font-medium text-muted-foreground">完了日時</dt>
+                <dd>{formatDate(job.completed_at)}</dd>
+              </div>
+            )}
+            {job.error_message && (
+              <div className="col-span-2">
+                <dt className="font-medium text-muted-foreground">エラー</dt>
+                <dd className="text-destructive text-xs">{job.error_message}</dd>
+              </div>
+            )}
+          </dl>
+        </CardContent>
+      </Card>
 
       <div className="flex gap-3">
         {job.status === "pending" && (
