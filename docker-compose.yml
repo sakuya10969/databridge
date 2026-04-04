@@ -4,15 +4,15 @@ services:
     container_name: databridge
     restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: databridge
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: data_platform
     ports:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d databridge"]
+      test: ["CMD-SHELL", "pg_isready -U app -d data_platform"]
       interval: 5s
       timeout: 5s
       retries: 5
