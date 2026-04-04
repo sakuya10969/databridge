@@ -1,0 +1,87 @@
+# 要件定義書: 帳票生成・ジョブ管理・ダウンロード
+
+## はじめに
+
+本ドキュメントはReportサブシステムの帳票生成・ジョブ管理・ダウンロード機能のMVP要件を定義する。
+帳票出力ジョブの作成、データ抽出・帳票ファイル生成（PDF/Excel/CSV）、ファイルダウンロード、再実行を責務とする。
+帳票テンプレートの管理は別spec（report-template-management）で定義済みの前提とする。
+
+## 用語集
+
+- **Report_Job**: 帳票出力の1回の実行単位。ステータス遷移（pending→generating→completed/failed）を持つ
+- **Report_Output**: 生成された帳票ファイルのメタデータ。ファイル名・パス・MIMEタイプ・ファイルサイズ・SHA-256チェックサムを持つ
+- **ReportJobStatus**: Report_Jobのステータスenum（pending/generating/completed/failed）
+- **Filter_Conditions**: 帳票出力時のフィルタ・ソート条件。JSONB形式で格納する
+- **IReportGenerator**: 帳票生成のインターフェース（ABC）。出力形式別の生成を抽象化する
+
+## 要件
+
+### 要件 1: 帳票出力ジョブ作成
+
+**ユーザーストーリー:** 業務部門の担当者として、帳票テンプレートを選択して出力条件を指定し、帳票出力を実行したい。それにより、必要なデータを所定フォーマットで取得できる。
+
+#### 受入条件
+
+1. WHEN 帳票出力ジョブ作成が要求された場合、THE System SHALL テンプレートID・出力形式（pdf/xlsx/csv）・Filter_Conditions・リクエスト者名を受け取り、ステータスが「pending」のReport_Jobを作成する
+2. WHEN Report_Jobが作成された場合、THE System SHALL バックグラウンドで帳票生成処理を開始する
+3. WHEN Filter_Conditionsが指定された場合、THE System SHALL 対応演算子（eq/neq/gt/gte/lt/lte/in/like）でデータを抽出する
+4. IF 指定されたテンプレートIDが存在しないまたは無効（is_active=false）な場合、THEN THE System SHALL ジョブ作成を拒否し、テンプレート不存在エラーを返す
+5. WHEN 帳票出力ジョブが作成された場合、THE Audit_Log SHALL 操作種別「create_report_job」・対象ジョブID・タイムスタンプを記録する
+
+### 要件 2: 帳票生成処理
+
+**ユーザーストーリー:** システムとして、帳票出力ジョブの生成処理を正しく実行したい。それにより、指定フォーマットの帳票ファイルを生成できる。
+
+#### 受入条件
+
+1. WHEN 帳票生成処理が開始された場合、THE System SHALL Report_Jobのステータスを「generating」に遷移し、Filter_Conditionsに基づいてデータを抽出する
+2. WHEN PDF形式が指定された場合、THE System SHALL Layout_Definitionに基づきタイトル・ヘッダ・フッタ・ページ番号を含むPDFファイルを生成する
+3. WHEN Excel形式が指定された場合、THE System SHALL Report_Template_Fieldのラベル・列幅・書式タイプに基づきxlsxファイルを生成する
+4. WHEN CSV形式が指定された場合、THE System SHALL Report_Template_Fieldのラベル・表示順に基づきCSVファイルを生成する
+5. WHEN 帳票生成が完了した場合、THE System SHALL ファイルをディスクに保存し、Report_Output（ファイル名・パス・MIMEタイプ・ファイルサイズ・SHA-256チェックサム）を作成し、Report_Jobのステータスを「completed」に遷移する
+6. IF 帳票生成中にエラーが発生した場合、THEN THE System SHALL Report_Jobのステータスを「failed」に遷移し、error_messageにエラー内容を記録する
+
+### 要件 3: 帳票出力ステータス管理
+
+**ユーザーストーリー:** システムとして、Report_Jobのステータスを正しく遷移させたい。それにより、帳票生成の進行状態を正確に追跡できる。
+
+#### 受入条件
+
+1. THE System SHALL Report_Jobのステータスを「pending→generating→completed」の順序で遷移させる
+2. WHEN 処理中にエラーが発生した場合、THE System SHALL 「pending」または「generating」から「failed」へ遷移させる
+3. WHEN 不正なステータス遷移が要求された場合、THE System SHALL 遷移を拒否し、INVALID_STATUSエラーを返す
+4. WHEN 再実行が要求された場合、THE System SHALL 「failed」から「pending」への遷移のみを許可する
+
+### 要件 4: 帳票ファイルダウンロード
+
+**ユーザーストーリー:** 業務部門の担当者として、生成完了した帳票ファイルをダウンロードしたい。それにより、帳票を業務で利用できる。
+
+#### 受入条件
+
+1. WHEN ステータスが「completed」のReport_Jobに対してダウンロードが要求された場合、THE System SHALL 最新のReport_Outputのファイルをストリーミングで返す
+2. WHEN ダウンロードレスポンスを返す場合、THE System SHALL 出力形式に応じたMIMEタイプとContent-Dispositionヘッダを設定する
+3. IF ステータスが「completed」以外のReport_Jobに対してダウンロードが要求された場合、THEN THE System SHALL 404エラーを返す
+4. IF Report_Outputのファイルがディスク上に存在しない場合、THEN THE System SHALL 404エラーを返す
+5. WHEN ダウンロードが実行された場合、THE Audit_Log SHALL 操作種別「download_report」・対象出力ID・タイムスタンプを記録する
+
+### 要件 5: 帳票出力ジョブ管理
+
+**ユーザーストーリー:** 管理者として、全帳票出力ジョブの状況を一覧で確認したい。それにより、帳票出力の進捗と履歴を把握できる。
+
+#### 受入条件
+
+1. WHEN 帳票出力ジョブ一覧が要求された場合、THE System SHALL 全Report_Jobをステータス・作成日時・テンプレート名・出力形式と共にページネーション付きで返す
+2. WHEN ステータスまたはテンプレートIDでフィルタが指定された場合、THE System SHALL 指定条件に一致するジョブのみを返す
+3. WHEN 帳票出力ジョブ詳細が要求された場合、THE System SHALL ステータス・出力条件・出力行数・生成ファイル情報・タイムスタンプを含む詳細情報を返す
+4. IF 存在しないジョブIDが指定された場合、THEN THE System SHALL 404エラーを返す
+
+### 要件 6: 帳票出力再実行
+
+**ユーザーストーリー:** 業務部門の担当者として、失敗した帳票出力ジョブを同一条件で再実行したい。それにより、一時的なエラーからの復旧を効率化できる。
+
+#### 受入条件
+
+1. WHEN ステータスが「failed」のReport_Jobに対して再実行が要求された場合、THE System SHALL 同一テンプレート・同一条件でReport_Jobのステータスを「pending」に戻し、生成処理を再開する
+2. WHEN 再実行時に帳票が生成された場合、THE System SHALL 新しいReport_Outputレコードを作成する（旧ファイルは保持する）
+3. WHEN ステータスが「failed」以外のReport_Jobに対して再実行が要求された場合、THE System SHALL 再実行を拒否し、INVALID_STATUSエラーを返す
+4. WHEN 再実行が実行された場合、THE Audit_Log SHALL 操作種別「retry_report_job」・対象ジョブID・タイムスタンプを記録する

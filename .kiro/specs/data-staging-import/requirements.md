@@ -1,0 +1,49 @@
+# 要件定義書: staging経由DB取り込み・再実行・Import用テンプレート管理
+
+## はじめに
+
+本ドキュメントはImportサブシステムのデータ投入・再実行・テンプレート管理機能のMVP要件を定義する。
+staging経由の安全なDB取り込み、失敗ジョブの再実行、Import用テンプレートのCRUDを責務とする。
+
+## 用語集
+
+- **Staging_Table**: 本番テーブルへの直接INSERTを防ぐための一時テーブル。ジョブごとに動的に作成・削除する
+- **Import_Template**: 列マッピング＋バリデーション設定の再利用可能な定義（Import専用）。column_definitionsをJSONBで格納する
+
+## 要件
+
+### 要件 1: 取り込み実行
+
+**ユーザーストーリー:** 業務部門の担当者として、バリデーション通過後にデータをDBへ投入したい。それにより、業務データを安全にシステムに反映できる。
+
+#### 受入条件
+
+1. WHEN 取り込み実行が要求された場合、THE System SHALL Staging_Tableを動的に作成し、バリデーション通過データを投入した後、本番テーブルへトランザクション内で反映する
+2. WHEN 取り込みが完了した場合、THE System SHALL Import_Jobのステータスを「completed」に遷移し、Staging_Tableを削除する
+3. IF 取り込み処理中にDBエラーが発生した場合、THEN THE System SHALL トランザクションをロールバックし、Import_Jobのステータスを「failed」に遷移する
+4. WHEN 取り込み処理が開始された場合、THE System SHALL Import_Jobのステータスを「importing」に遷移する
+5. WHEN 取り込みが実行された場合、THE Audit_Log SHALL 操作種別「import」・対象ジョブID・タイムスタンプを記録する
+6. THE System SHALL 本番テーブルへの直接INSERTを禁止し、Staging_Table経由での投入のみを許可する
+
+### 要件 2: 再実行
+
+**ユーザーストーリー:** 業務部門の担当者として、失敗したジョブを同一設定で再実行したい。それにより、一時的なエラーからの復旧を効率化できる。
+
+#### 受入条件
+
+1. WHEN ステータスが「failed」のImport_Jobに対して再実行が要求された場合、THE System SHALL 同一の列マッピング・バリデーション設定でパースから再実行する
+2. WHEN 再実行が開始された場合、THE System SHALL 既存のStaging_Tableが存在すれば削除し、本番テーブルから当該ジョブで投入されたデータを削除してから再投入する
+3. WHEN ステータスが「failed」以外のImport_Jobに対して再実行が要求された場合、THE System SHALL 再実行を拒否し、INVALID_STATUSエラーを返す
+4. WHEN 再実行が実行された場合、THE Audit_Log SHALL 操作種別「retry」・対象ジョブID・タイムスタンプを記録する
+
+### 要件 3: Import用テンプレート管理
+
+**ユーザーストーリー:** 情報システム部門の担当者として、列マッピングとバリデーション設定をテンプレートとして保存したい。それにより、同一形式ファイルの繰り返し取り込みを効率化できる。
+
+#### 受入条件
+
+1. WHEN テンプレート作成が要求された場合、THE System SHALL テンプレート名・説明・ターゲットテーブル名・列定義（JSONB）を保存する
+2. WHEN テンプレート一覧が要求された場合、THE System SHALL 全Import_Templateを名前・作成日時と共に返す
+3. WHEN テンプレート詳細が要求された場合、THE System SHALL テンプレートの全情報（列定義含む）を返す
+4. WHEN 同一名のテンプレートが既に存在する場合、THE System SHALL 作成を拒否し、名前重複エラーを返す
+5. WHEN テンプレート作成が成功した場合、THE Audit_Log SHALL 操作種別「create_template」・対象テンプレートID・タイムスタンプを記録する

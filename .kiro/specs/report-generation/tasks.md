@@ -1,0 +1,141 @@
+# 実装計画: 帳票生成・ジョブ管理・ダウンロード
+
+## 概要
+
+Reportサブシステムの帳票生成・ジョブ管理機能を段階的に実装する。
+帳票出力ジョブ作成、データ抽出・帳票ファイル生成（PDF/Excel/CSV）、ファイルダウンロード、再実行のAPI・画面を構築する。
+shared-foundation, report-template-management（ReportTemplate, ReportTemplateField, IReportTemplateRepository）が構築済みの前提とする。
+
+## タスク
+
+- [ ] 1. Reportジョブドメイン層を実装する
+  - [ ] 1.1 ReportJob・ReportOutputエンティティとEnumを定義する
+    - `server/app/domain/entities/report_job.py` に ReportJob dataclass と ReportJobStatus enum を定義。ステータス遷移の妥当性検証メソッドを含む
+    - `server/app/domain/entities/report_output.py` に ReportOutput dataclass を定義
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+
+  - [ ]* 1.2 Reportステータス遷移ロジックのプロパティテストを作成する
+    - **Property 3: Reportステータス遷移の妥当性**
+    - hypothesis で全ReportJobStatus×全遷移先の組み合わせを生成し検証
+    - **Validates: Requirements 3.1, 3.2, 3.3, 3.4**
+
+  - [ ] 1.3 リポジトリ・帳票生成インターフェースを定義する
+    - `server/app/domain/repositories/i_report_job_repository.py` に IReportJobRepository ABC を定義
+    - `server/app/domain/repositories/i_report_output_repository.py` に IReportOutputRepository ABC を定義
+    - `server/app/domain/interfaces/i_report_generator.py` に IReportGenerator ABC を定義
+    - _Requirements: 全体基盤_
+
+- [ ] 2. Reportジョブインフラストラクチャ層を実装する
+  - [ ] 2.1 Report系SQLAlchemyテーブルモデルを追加する
+    - `server/app/infrastructure/database/models.py` に ReportJobModel, ReportOutputModel を追加定義
+    - _Requirements: 全体基盤_
+
+  - [ ] 2.2 Reportジョブ用マイグレーションを作成する
+    - `uv run alembic revision --autogenerate -m "create report job tables"` でマイグレーション生成
+    - report_jobs → report_outputs の順序でテーブル作成
+    - _Requirements: 全体基盤_
+
+  - [ ] 2.3 ReportJobRepository・ReportOutputRepositoryを実装する
+    - `server/app/infrastructure/repositories/report_job_repository.py` に ReportJobRepository を実装
+    - `server/app/infrastructure/repositories/report_output_repository.py` に ReportOutputRepository を実装
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+
+  - [ ] 2.4 帳票生成器を実装する
+    - `server/app/infrastructure/report_generator/base_generator.py` に帳票生成基底クラスを定義
+    - `server/app/infrastructure/report_generator/excel_generator.py` に ExcelReportGenerator を実装（openpyxl）
+    - `server/app/infrastructure/report_generator/csv_generator.py` に CsvReportGenerator を実装（pandas）
+    - `server/app/infrastructure/report_generator/pdf_generator.py` に PdfReportGenerator のスタブを実装
+    - `server/app/infrastructure/report_generator/__init__.py` に ReportGeneratorFactory を実装
+    - _Requirements: 2.2, 2.3, 2.4, 2.5_
+
+  - [ ]* 2.5 帳票生成の出力形式別正確性のプロパティテストを作成する
+    - **Property 4: 帳票生成の出力形式別正確性**
+    - hypothesis でランダムなDataFrameとFieldを生成し、Excel/CSVの出力を検証
+    - **Validates: Requirements 2.3, 2.4**
+
+  - [ ] 2.6 FilterConditionsBuilderを実装する
+    - `server/app/infrastructure/filter_builder.py` に FilterConditionsBuilder を実装
+    - eq, neq, gt, gte, lt, lte, in, like演算子対応、sort条件対応
+    - _Requirements: 1.3_
+
+  - [ ]* 2.7 FilterConditionsBuilderのプロパティテストを作成する
+    - **Property 2: Filter_Conditionsによるデータ抽出**
+    - hypothesis でランダムなフィルタ条件とデータセットを生成し検証
+    - **Validates: Requirements 1.3**
+
+- [ ] 3. Reportジョブアプリケーション層を実装する
+  - [ ] 3.1 ReportJobServiceを実装する
+    - `server/app/application/report_job_service.py` に ReportJobService を実装
+    - create_job, generate, get_job, list_jobs, retry, get_output メソッド
+    - _Requirements: 1.1-1.5, 2.1-2.6, 3.1-3.4, 4.1-4.5, 5.1-5.4, 6.1-6.4_
+
+  - [ ]* 3.2 帳票出力ジョブ作成のプロパティテストを作成する
+    - **Property 1: 帳票出力ジョブの作成**
+    - **Validates: Requirements 1.1**
+
+  - [ ]* 3.3 帳票出力再実行のプロパティテストを作成する
+    - **Property 8: 帳票出力再実行**
+    - **Validates: Requirements 6.1, 6.2**
+
+- [ ] 4. Reportジョブプレゼンテーション層を実装する
+  - [ ] 4.1 Report用Pydanticスキーマを定義する
+    - `server/app/presentation/report_jobs/__init__.py`, `server/app/presentation/report_jobs/schemas.py` を作成
+    - リクエスト: ReportJobCreateRequest
+    - レスポンス: ReportJobResponse, ReportJobDetailResponse, ReportOutputResponse
+    - _Requirements: 全エンドポイント_
+
+  - [ ] 4.2 Report用DI設定を追加する
+    - `server/app/presentation/dependencies.py` に ReportJobService のファクトリ関数を追加
+    - _Requirements: 全体基盤_
+
+  - [ ] 4.3 帳票出力ジョブAPIエンドポイントを実装する
+    - `server/app/presentation/report_jobs/router.py` に APIRouter を定義
+    - POST /api/v1/report-jobs, GET /api/v1/report-jobs, GET /api/v1/report-jobs/{job_id}
+    - GET /api/v1/report-jobs/{job_id}/download（StreamingResponse）
+    - POST /api/v1/report-jobs/{job_id}/retry
+    - ルーター集約に追加、Report固有例外ハンドラを追加
+    - _Requirements: 1.1-1.5, 4.1-4.5, 5.1-5.4, 6.1-6.4_
+
+  - [ ]* 4.4 帳票出力ジョブ一覧フィルタリングのプロパティテストを作成する
+    - **Property 7: 帳票出力ジョブ一覧のフィルタリング**
+    - **Validates: Requirements 5.1, 5.2**
+
+  - [ ]* 4.5 Report APIの統合テストを作成する
+    - pytest + httpx.AsyncClient で FastAPI TestClient を使用
+    - ジョブ作成→帳票生成→ダウンロードの一連フローをテスト
+    - 再実行フローのテスト
+    - _Requirements: 全Report要件_
+
+- [ ] 5. フロントエンド（帳票出力ジョブ管理）を実装する
+  - [ ] 5.1 Report系エンティティ型定義を作成する
+    - `client/app/entities/report-job/types.ts` に ReportJob型、ReportJobStatus enum を定義
+    - `client/app/entities/report-output/types.ts` に ReportOutput型 を定義
+    - _Requirements: 全エンティティ_
+
+  - [ ] 5.2 report-job feature を実装する
+    - `client/app/features/report-job/api/` にcreate, fetch, retry, download APIを実装
+    - `client/app/features/report-job/hooks/use-report-job-list.ts` にジョブ一覧フックを実装
+    - `client/app/features/report-job/hooks/use-report-job-polling.ts` にステータスポーリングフックを実装
+    - _Requirements: 1.1, 4.1, 5.1, 5.2, 6.1_
+
+  - [ ] 5.3 Report系 widget を実装する
+    - `client/app/widgets/report-job-table/report-job-table.tsx` に帳票出力ジョブ一覧テーブルを実装
+    - `client/app/widgets/report-condition-form/report-condition-form.tsx` に帳票出力条件指定フォームを実装
+    - `client/app/widgets/report-download-button/report-download-button.tsx` にダウンロードボタンを実装
+    - `client/app/widgets/job-status-badge/job-status-badge.tsx` にステータスバッジを実装（Import/Report共用）
+    - _Requirements: 1.1, 1.3, 4.1, 4.2, 5.1, 5.2_
+
+  - [ ] 5.4 帳票出力ジョブ画面を実装する
+    - `client/app/routes/report-jobs.tsx` にジョブ一覧画面を実装
+    - `client/app/routes/report-jobs.new.tsx` にジョブ作成画面を実装
+    - `client/app/routes/report-jobs.$jobId.tsx` にジョブ詳細・ダウンロード画面を実装
+    - ルート定義・サイドバーナビゲーションを更新
+    - _Requirements: 1.1, 4.1, 5.1-5.4, 6.1_
+
+- [ ] 6. チェックポイント - 帳票生成・ジョブ管理・ダウンロード完了
+  - 全テストが通ることを確認する。不明点があればユーザーに質問する。
+
+## 備考
+
+- `*` マーク付きタスクはオプション
+- PDF生成はMVP時にライブラリ選定（WeasyPrint or reportlab）。スタブで先行実装

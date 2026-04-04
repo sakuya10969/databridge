@@ -1,0 +1,168 @@
+# 設計書: staging経由DB取り込み・再実行・Import用テンプレート管理
+
+## 概要
+
+Importサブシステムのデータ投入機能。staging経由の安全なDB取り込み、失敗ジョブの再実行、Import用テンプレートのCRUDを提供する。
+
+依存: shared-foundation, file-upload-parse（ImportJob, IJobRepository）, column-mapping-validation（ColumnMapping, IMappingRepository, IErrorRepository）
+
+## アーキテクチャ
+
+### バックエンド追加コンポーネント
+
+```
+server/app/
+  domain/entities/
+    template.py              Template dataclass（Import用）
+  domain/repositories/
+    i_template_repository.py ITemplateRepository ABC
+  infrastructure/repositories/
+    template_repository.py   TemplateRepository具象
+  infrastructure/staging/
+    staging_manager.py       StagingManager
+  infrastructure/database/
+    models.py                TemplateModel 追加
+  application/
+    import_job_service.py    run_import, retry メソッド追加
+    import_template_service.py ImportTemplateService
+  presentation/jobs/
+    router.py                POST /{id}/import, POST /{id}/retry 追加
+  presentation/templates/
+    router.py                GET/POST /templates, GET /templates/{id}
+    schemas.py               TemplateCreateRequest, TemplateResponse
+```
+
+### フロントエンド追加コンポーネント
+
+```
+client/app/
+  entities/template/types.ts     Template型
+  features/template/             useTemplates hook, fetch-templates/save-template API
+  features/import-job/           run-import/retry-job API 追加
+  routes/templates.tsx           テンプレート一覧画面
+  routes/templates.$templateId.tsx テンプレート詳細画面
+```
+
+## コンポーネントとインターフェース
+
+### バックエンド
+
+#### domain層
+
+**エンティティ:**
+- `Template`: Import用テンプレートエンティティ（id, name, description, target_table, column_definitions, created_at, updated_at）
+
+**リポジトリインターフェース:**
+
+```python
+class ITemplateRepository(ABC):
+    async def create(self, template: Template) -> Template: ...
+    async def get_by_id(self, template_id: UUID) -> Template | None: ...
+    async def get_by_name(self, name: str) -> Template | None: ...
+    async def list_templates(self) -> list[Template]: ...
+```
+
+#### infrastructure層
+
+**StagingManager:**
+
+```python
+class StagingManager:
+    async def create_staging_table(self, job_id: UUID, columns: list) -> None: ...
+    async def insert_to_staging(self, job_id: UUID, df: pd.DataFrame) -> None: ...
+    async def copy_to_production(self, job_id: UUID, target_table: str) -> None: ...
+    async def drop_staging_table(self, job_id: UUID) -> None: ...
+    async def cleanup_production(self, job_id: UUID, target_table: str) -> None: ...
+```
+
+- staging_{job_id[:8]}テーブルを動的作成
+- 本番反映はINSERT INTO ... SELECT（_import_job_id, _imported_atメタカラム付与）
+- 全操作をトランザクション内で実行
+
+#### application層
+
+**ImportJobService追加メソッド:**
+
+```python
+async def run_import(self, job_id: UUID) -> ImportJob: ...
+async def retry(self, job_id: UUID) -> ImportJob: ...
+```
+
+**ImportTemplateService:**
+
+```python
+class ImportTemplateService:
+    def __init__(self, template_repo, audit_repo): ...
+    async def create_template(self, name, description, target_table, column_definitions, operator) -> Template: ...
+    async def get_template(self, template_id) -> Template: ...
+    async def list_templates(self) -> list[Template]: ...
+```
+
+#### presentation層
+
+**追加エンドポイント:**
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| POST | /api/v1/jobs/{job_id}/import | 取り込み実行 |
+| POST | /api/v1/jobs/{job_id}/retry | 再実行 |
+| GET | /api/v1/templates | テンプレート一覧 |
+| POST | /api/v1/templates | テンプレート作成 |
+| GET | /api/v1/templates/{template_id} | テンプレート詳細 |
+
+## データモデル
+
+### templates
+
+| フィールド | 型 | 制約 | 説明 |
+|-----------|-----|------|------|
+| id | UUID | PK | テンプレートID |
+| name | VARCHAR(255) | NOT NULL, UNIQUE | テンプレート名 |
+| description | TEXT | NULL | 説明 |
+| target_table | VARCHAR(255) | NOT NULL | ターゲットテーブル名 |
+| column_definitions | JSONB | NOT NULL | 列定義JSON |
+| created_at | TIMESTAMPTZ | NOT NULL | 作成日時 |
+| updated_at | TIMESTAMPTZ | NOT NULL | 更新日時 |
+
+## 正確性プロパティ
+
+### Property 1: staging経由の取り込み
+
+*For any* バリデーション通過済みのImport_Jobに対して、取り込み実行後にデータは本番テーブルに存在し、Staging_Tableは削除されている。本番テーブルへの投入は全てStaging_Table経由で行われる
+
+**Validates: Requirements 1.1, 1.2, 1.6**
+
+### Property 2: 再実行の冪等性
+
+*For any* 失敗したImport_Jobに対して、再実行後の本番テーブルのデータは初回成功時と同一であり、重複データは存在しない
+
+**Validates: Requirements 2.1, 2.2**
+
+### Property 3: 再実行のステータスガード
+
+*For any* ステータスが「failed」以外のImport_Jobに対して、再実行要求はINVALID_STATUSエラーで拒否される
+
+**Validates: Requirements 2.3**
+
+### Property 4: テンプレートの保存と取得の一致
+
+*For any* 有効なテンプレート定義（名前・説明・ターゲットテーブル・列定義）に対して、作成後に取得したテンプレートは元の定義と同一の内容を持ち、一覧にも含まれる
+
+**Validates: Requirements 3.1, 3.2, 3.3**
+
+### Property 5: テンプレート名の一意性
+
+*For any* 既存テンプレートと同一名のテンプレート作成要求に対して、作成は拒否され名前重複エラーが返される
+
+**Validates: Requirements 3.4**
+
+## テスト戦略
+
+### テストフレームワーク
+
+- バックエンド: pytest + hypothesis
+
+### プロパティベーステスト
+
+- ライブラリ: hypothesis（Python）
+- タグ形式: **Feature: data-staging-import, Property {number}: {property_text}**

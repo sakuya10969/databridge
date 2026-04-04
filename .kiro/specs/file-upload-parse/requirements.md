@@ -1,0 +1,59 @@
+# 要件定義書: ファイルアップロード・パース・プレビュー
+
+## はじめに
+
+本ドキュメントはImportサブシステムの入口となるファイルアップロード・パース・プレビュー機能のMVP要件を定義する。
+CSV/xlsxファイルの受付、パース処理（シート選択・ヘッダ行指定）、プレビュー表示までを責務とする。
+Import_Jobの作成とステータス管理（uploaded→parsing）を含む。
+
+## 用語集
+
+- **Import_Job**: 1ファイルの取り込み処理の実行単位。本specではuploaded→parsingまでのステータス遷移を扱う
+- **JobStatus**: Import_Jobのステータスenum（uploaded/parsing/validating/importing/completed/failed）
+- **IFileParser**: ファイルパースのインターフェース（ABC）。CSV/xlsxの読み込みを抽象化する
+- **Audit_Log**: 操作の監査ログ。shared-foundationで定義済み
+
+## 要件
+
+### 要件 1: ファイルアップロード
+
+**ユーザーストーリー:** 業務部門の担当者として、CSV/xlsxファイルをアップロードしたい。それにより、データ取り込みプロセスを開始できる。
+
+#### 受入条件
+
+1. WHEN ユーザーがCSVまたはxlsxファイルをアップロードした場合、THE System SHALL ファイルをディスクに保存し、ステータスが「uploaded」のImport_Jobを作成する
+2. WHEN ファイルサイズが50MBを超過した場合、THE System SHALL アップロードを拒否し、ファイルサイズ制限超過のエラーメッセージを返す
+3. WHEN 対応していないファイル形式（CSV・xlsx以外）がアップロードされた場合、THE System SHALL アップロードを拒否し、対応形式のエラーメッセージを返す
+4. WHEN ファイルアップロードが成功した場合、THE System SHALL ファイル名・ファイルサイズ・ファイル種別・操作者名・作成日時を含むImport_Jobレスポンスを返す
+5. WHEN ファイルアップロードが成功した場合、THE Audit_Log SHALL 操作種別「upload」・対象ジョブID・タイムスタンプを記録する
+
+### 要件 2: パース実行
+
+**ユーザーストーリー:** 業務部門の担当者として、アップロードしたファイルをパースしたい。それにより、ファイルの構造（列名・行数・シート）を把握できる。
+
+#### 受入条件
+
+1. WHEN ユーザーがパース実行を要求した場合、THE System SHALL 指定されたシート名とヘッダ開始行でファイルをパースし、検出された列名・総行数・シート一覧を返す
+2. WHEN xlsxファイルが複数シートを持つ場合、THE System SHALL 全シート名の一覧を返し、ユーザーが対象シートを選択できるようにする
+3. WHEN パース処理が開始された場合、THE System SHALL Import_Jobのステータスを「parsing」に遷移する
+4. IF パース処理中にファイル読み込みエラーが発生した場合、THEN THE System SHALL Import_Jobのステータスを「failed」に遷移し、エラーメッセージを記録する
+
+### 要件 3: プレビュー表示
+
+**ユーザーストーリー:** 業務部門の担当者として、アップロードしたファイルの内容をプレビューしたい。それにより、取り込み前にデータの正しさを確認できる。
+
+#### 受入条件
+
+1. WHEN プレビューが要求された場合、THE System SHALL 先頭50行のデータをテーブル形式で返す
+2. WHEN パースが未完了のジョブに対してプレビューが要求された場合、THE System SHALL 適切なエラーメッセージを返す
+
+### 要件 4: Import_Jobドメインエンティティ
+
+**ユーザーストーリー:** システムとして、Import_Jobのステータスを正しく遷移させたい。それにより、処理の進行状態を正確に追跡できる。
+
+#### 受入条件
+
+1. THE System SHALL Import_Jobのステータスを「uploaded→parsing→validating→importing→completed」の順序で遷移させる
+2. WHEN 処理中にエラーが発生した場合、THE System SHALL 任意のステータスから「failed」へ遷移させる
+3. WHEN 不正なステータス遷移が要求された場合、THE System SHALL 遷移を拒否し、INVALID_STATUSエラーを返す
+4. WHEN 再実行が要求された場合、THE System SHALL 「failed」から「parsing」への遷移のみを許可する
