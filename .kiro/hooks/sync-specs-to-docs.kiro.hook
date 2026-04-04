@@ -6,7 +6,8 @@
   "when": {
     "type": "fileEdited",
     "patterns": [
-      ".kiro/specs/**/*.md"
+      ".kiro/specs/**/*.md",
+      ".kiro/specs/INDEX.md"
     ]
   },
   "then": {
