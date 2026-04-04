@@ -9,7 +9,7 @@ SOURCE_DIR="$REPO_ROOT/.kiro/specs"
 TARGET_DIR="$REPO_ROOT/docs/specs"
 
 # Files to sync (edit this array to include/exclude files)
-SYNC_FILES=("requirements.md" "design.md" "tasks.md")
+SYNC_FILES=("requirements.md" "design.md" "tasks.md" "INDEX.md")
 
 HEADER_MARKER="<!-- AUTO-GENERATED: DO NOT EDIT -->"
 HEADER_NOTICE="${HEADER_MARKER}
@@ -51,6 +51,12 @@ main() {
   fi
 
   local synced=0
+
+  # Sync root INDEX.md
+  if [ -f "$SOURCE_DIR/INDEX.md" ]; then
+    sync_file "$SOURCE_DIR/INDEX.md" "$TARGET_DIR/INDEX.md"
+    synced=$((synced + 1))
+  fi
 
   for spec_dir in "$SOURCE_DIR"/*/; do
     [ -d "$spec_dir" ] || continue
