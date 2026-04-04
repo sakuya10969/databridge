@@ -10,7 +10,7 @@ export interface ImportJob {
   id: string;
   file_name: string;
   file_size: number;
-  file_type: "csv" | "xlsx";
+  file_type?: "csv" | "xlsx";
   sheet_name: string | null;
   header_row: number;
   status: JobStatus;

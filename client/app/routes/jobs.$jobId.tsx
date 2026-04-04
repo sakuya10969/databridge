@@ -26,6 +26,7 @@ export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const qc = useQueryClient();
   const { data: job, isLoading, isError } = useJobPolling(jobId!);
+  const fileTypeLabel = job?.file_type?.toUpperCase() ?? "-";
 
   const importMutation = useMutation({
     mutationFn: () => runImport(jobId!),
@@ -72,7 +73,7 @@ export default function JobDetailPage() {
   const infoItems = [
     { icon: FileSpreadsheet, label: "ファイル名", value: job.file_name },
     { icon: FileSpreadsheet, label: "ファイルサイズ", value: formatFileSize(job.file_size) },
-    { icon: FileSpreadsheet, label: "ファイル種別", value: job.file_type.toUpperCase() },
+    { icon: FileSpreadsheet, label: "ファイル種別", value: fileTypeLabel },
     { icon: Rows3, label: "総行数", value: job.total_rows ?? "-" },
     { icon: AlertCircle, label: "エラー件数", value: job.error_count },
     { icon: User, label: "操作者", value: job.operator },
