@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.column_mapping import ColumnMapping
+from app.domain.exceptions import ValidationError
 
 
 def _staging_table_name(job_id: UUID) -> str:
@@ -25,6 +26,9 @@ class StagingManager:
         self._session = session
 
     async def create_staging_table(self, job_id: UUID, mappings: list[ColumnMapping]) -> None:
+        if not mappings:
+            raise ValidationError("Cannot create staging table without column mappings")
+
         table = _staging_table_name(job_id)
         col_defs = ", ".join(
             f'"{m.target_column}" {_DTYPE_MAP.get(m.data_type, "TEXT")}'
@@ -36,6 +40,9 @@ class StagingManager:
     async def insert_to_staging(
         self, job_id: UUID, df: pd.DataFrame, mappings: list[ColumnMapping]
     ) -> None:
+        if not mappings:
+            raise ValidationError("Cannot insert to staging without column mappings")
+
         table = _staging_table_name(job_id)
         col_names = [m.source_column for m in mappings]
         target_names = [m.target_column for m in mappings]

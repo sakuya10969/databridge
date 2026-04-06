@@ -220,6 +220,9 @@ class ImportJobService:
         await self._job_repo.update(job)
 
         mappings = await self._mapping_repo.list_by_job(job_id)
+        if not mappings:
+            raise ValidationError("Cannot import without column mappings")
+
         df = _df_cache.get(job_id)
         if df is None:
             df, _, _ = self._parser.parse(job.file_path, job.file_type, job.sheet_name, job.header_row)
