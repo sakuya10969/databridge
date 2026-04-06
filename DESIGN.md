@@ -1,15 +1,15 @@
 # Design System — DataBridge
 
 Design system for a business data import & report generation SaaS.
-Rich, polished dark UI with high information density and clean lines.
+Light-based, clean, professional interface with high information density.
 
 ---
 
 ## Overview
 
-Dark-themed, minimal interface built for professional business workflows.
+Light-themed interface built for enterprise business workflows.
 Clean lines, low visual noise, high information density.
-Balances trust and sophistication for enterprise SaaS.
+White base with brand blue accents for trust and clarity.
 
 ---
 
@@ -21,24 +21,24 @@ Balances trust and sophistication for enterprise SaaS.
 |-------|-------|-------|
 | Primary | `#2665fd` | CTAs, active states, key interactive elements |
 | Secondary | `#475569` | Supporting UI, chips, secondary actions |
-| Surface | `#0b1326` | Page backgrounds |
-| On-surface | `#dae2fd` | Primary text on dark backgrounds |
-| Error | `#ffb4ab` | Validation errors, destructive actions |
+| Surface | `#ffffff` | Page backgrounds, card backgrounds |
+| On-surface | `#0f172a` | Primary text on light backgrounds |
+| Error | `#dc2626` | Validation errors, destructive actions |
 
 ### Extended Palette
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| Surface-variant | `#111b33` | Card backgrounds, input field backgrounds |
-| Surface-elevated | `#152040` | Hover states, dropdowns, modal backgrounds |
-| Border | `#1e2d4d` | Card / table / input borders |
-| Border-subtle | `#162038` | Section dividers, subtle boundaries |
-| Primary-hover | `#4d83fd` | Primary button hover |
-| Primary-muted | `rgba(38, 101, 253, 0.12)` | Active nav background, selected row highlight |
-| Success | `#4ade80` | Completed status, success notifications |
-| Warning | `#fbbf24` | Warning status, caution indicators |
-| Text-secondary | `#8896b3` | Secondary text, placeholders |
-| Text-disabled | `#4a5568` | Disabled state text |
+| Surface-page | `#f8fafc` | Page background (subtle gray) |
+| Surface-elevated | `#ffffff` | Cards, modals, popovers |
+| Border | `#e2e8f0` | Card / table / input borders |
+| Border-subtle | `#f1f5f9` | Section dividers, subtle boundaries |
+| Primary-hover | `#1d4ed8` | Primary button hover |
+| Primary-muted | `rgba(38, 101, 253, 0.08)` | Active nav background, selected row |
+| Success | `#16a34a` | Completed status, success notifications |
+| Warning | `#d97706` | Warning status, caution indicators |
+| Text-secondary | `#64748b` | Secondary text, placeholders |
+| Text-disabled | `#94a3b8` | Disabled state text |
 
 ---
 
@@ -90,15 +90,14 @@ Font family: **Inter** (Google Fonts)
 
 ## Elevation & Depth
 
-Flat design by default. Elevation is expressed through border and background contrast.
-Box-shadow is used sparingly.
+Light, subtle shadows to create depth hierarchy.
 
 | Level | Style | Usage |
 |-------|-------|-------|
-| Level 0 | Border only | Cards, tables |
-| Level 1 | `0 1px 3px rgba(0,0,0,0.3)` | Dropdowns, popovers |
-| Level 2 | `0 4px 24px rgba(0,0,0,0.4)` | Modals, dialogs |
-| Glow | `0 0 20px rgba(38,101,253,0.15)` | Focus rings, active element emphasis |
+| Level 0 | Border only | Inline cards, tables |
+| Level 1 | `0 1px 3px rgba(0,0,0,0.08)` | Cards, dropdowns |
+| Level 2 | `0 4px 24px rgba(0,0,0,0.12)` | Modals, dialogs |
+| Ring | `0 0 0 3px rgba(38,101,253,0.15)` | Focus rings |
 
 ---
 
@@ -109,55 +108,55 @@ Box-shadow is used sparingly.
 | Variant | Background | Text | Border | Usage |
 |---------|-----------|------|--------|-------|
 | Primary | `#2665fd` | `#ffffff` | none | Main CTAs (import, save, generate) |
-| Secondary | transparent | `#dae2fd` | `#1e2d4d` | Secondary actions (cancel, back) |
-| Ghost | transparent | `#8896b3` | none | In-table actions, navigation |
-| Destructive | transparent | `#ffb4ab` | `#ffb4ab33` | Delete, destructive operations |
-| Disabled | `#1e2d4d` | `#4a5568` | none | Disabled state |
+| Secondary | `#ffffff` | `#0f172a` | `#e2e8f0` | Secondary actions (cancel, back) |
+| Ghost | transparent | `#64748b` | none | In-table actions, navigation |
+| Destructive | `#dc2626` | `#ffffff` | none | Delete, destructive operations |
+| Disabled | `#f1f5f9` | `#94a3b8` | none | Disabled state |
 
 - border-radius: 8px
 - padding: 8px 16px (default) / 6px 12px (small)
-- Hover: lighten background + subtle transition (150ms ease)
-- Focus: Primary glow ring
+- Hover: darken background + subtle transition (150ms ease)
+- Focus: Primary focus ring
 
 ### Inputs
 
-- background: `#111b33`
-- border: 1px solid `#1e2d4d`
+- background: `#ffffff`
+- border: 1px solid `#e2e8f0`
 - border-radius: 8px
 - padding: 10px 12px
-- text: `#dae2fd`
-- placeholder: `#4a5568`
-- Focus: border-color `#2665fd` + glow ring
-- Error: border-color `#ffb4ab`
+- text: `#0f172a`
+- placeholder: `#94a3b8`
+- Focus: border-color `#2665fd` + focus ring
+- Error: border-color `#dc2626`
 
 ### Cards
 
-- background: `#111b33`
-- border: 1px solid `#1e2d4d`
+- background: `#ffffff`
+- border: 1px solid `#e2e8f0`
 - border-radius: 12px
 - padding: 24px
-- No elevation (separation via border and background contrast)
-- Hover (when clickable): border-color `#2665fd40`
+- shadow: Level 1
+- Hover (when clickable): border-color `#2665fd`, shadow slightly stronger
 
 ### Tables
 
-- Header background: `#0d1730`
-- Header text: `#8896b3` (Label style, uppercase)
-- Row background: transparent
-- Row hover: `rgba(38, 101, 253, 0.06)`
-- Row border: 1px solid `#162038`
-- Cell text: `#dae2fd` (Body-small)
-- Selected row: `rgba(38, 101, 253, 0.12)` background
+- Header background: `#f8fafc`
+- Header text: `#64748b` (Label style, uppercase)
+- Row background: `#ffffff`
+- Row hover: `rgba(38, 101, 253, 0.04)`
+- Row border: 1px solid `#f1f5f9`
+- Cell text: `#0f172a` (Body-small)
+- Selected row: `rgba(38, 101, 253, 0.08)` background
 
 ### Badges / Status
 
 | Status | Background | Text | Usage |
 |--------|-----------|------|-------|
-| Completed | `rgba(74, 222, 128, 0.12)` | `#4ade80` | Completed jobs |
-| In Progress | `rgba(38, 101, 253, 0.12)` | `#4d83fd` | Processing jobs |
-| Failed | `rgba(255, 180, 171, 0.12)` | `#ffb4ab` | Failed jobs |
-| Warning | `rgba(251, 191, 36, 0.12)` | `#fbbf24` | Warnings, needs attention |
-| Pending | `rgba(136, 150, 179, 0.12)` | `#8896b3` | Queued, waiting |
+| Completed | `#f0fdf4` | `#16a34a` | Completed jobs |
+| In Progress | `#eff6ff` | `#2665fd` | Processing jobs |
+| Failed | `#fef2f2` | `#dc2626` | Failed jobs |
+| Warning | `#fffbeb` | `#d97706` | Warnings, needs attention |
+| Pending | `#f8fafc` | `#64748b` | Queued, waiting |
 
 - border-radius: 6px
 - padding: 2px 8px
@@ -165,26 +164,28 @@ Box-shadow is used sparingly.
 
 ### Sidebar Navigation
 
-- background: `#0b1326` (same as Surface)
+- background: `#ffffff`
+- border-right: 1px solid `#e2e8f0`
 - item padding: 10px 16px
-- Active: `rgba(38, 101, 253, 0.12)` background + `#2665fd` text + 2px left border `#2665fd`
-- Inactive: `#8896b3` text
-- Hover: `#111b33` background
+- Active: `rgba(38, 101, 253, 0.08)` background + `#2665fd` text + 2px left border `#2665fd`
+- Inactive: `#64748b` text
+- Hover: `#f8fafc` background
 
 ### Dialogs / Modals
 
-- overlay: `rgba(0, 0, 0, 0.6)` + backdrop-blur 4px
-- background: `#111b33`
-- border: 1px solid `#1e2d4d`
+- overlay: `rgba(0, 0, 0, 0.4)` + backdrop-blur 4px
+- background: `#ffffff`
+- border: 1px solid `#e2e8f0`
 - border-radius: 16px
 - shadow: Level 2
 - padding: 24px
 
 ### Toast Notifications
 
-- background: `#152040`
-- border: 1px solid `#1e2d4d`
+- background: `#ffffff`
+- border: 1px solid `#e2e8f0`
 - border-radius: 8px
+- shadow: Level 1
 - left border: 3px solid (status color)
 
 ---
@@ -214,18 +215,19 @@ Box-shadow is used sparingly.
 ### Do's
 
 - Use Primary (`#2665fd`) sparingly — only for the most important action
-- Maintain 4:1+ contrast ratio for all text
+- Maintain 4.5:1+ contrast ratio for all text
 - Always use color + text label for status (never color alone)
 - Keep tables high-density for scannability
 - Provide illustration/icon + description + CTA for empty states
+- Use white cards on the subtle gray page background for depth
 
 ### Don'ts
 
 - Don't mix rounded and sharp corners in the same view
 - Don't overuse Primary color for decoration
-- Don't use `#0b1326` (Surface) as text color (insufficient contrast)
 - Don't stack borders (e.g. card containing a bordered table)
 - Don't nest cards more than 2 levels deep
+- Don't use pure black (`#000000`) for text — use `#0f172a` instead
 
 ---
 
