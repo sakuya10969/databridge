@@ -1,36 +1,34 @@
 import { useParams, Link } from "react-router";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { useValidation } from "~/features/validation/hooks/use-validation";
-import { ArrowLeft, Play, CheckCircle2, AlertTriangle } from "lucide-react";
+import { BackLink, PageContainer, PageHeader, StatGrid } from "~/shared/ui/page";
+import { SectionCard } from "~/shared/ui/section-card";
+import { Play, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function JobValidatePage() {
   const { jobId } = useParams<{ jobId: string }>();
   const mutation = useValidation(jobId!);
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-3">
-        <Link to={`/jobs/${jobId}`}>
-          <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="h-4 w-4" />
-            ジョブ詳細に戻る
-          </Button>
-        </Link>
-      </div>
+    <PageContainer className="max-w-3xl">
+      <BackLink to={`/jobs/${jobId}`}>ジョブ詳細に戻る</BackLink>
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">バリデーション実行</h1>
-        <p className="mt-1 text-sm text-gray-500">データの型・必須・重複・形式チェックを実行します</p>
-      </div>
+      <PageHeader
+        eyebrow="Validation"
+        title="バリデーション実行"
+        description="データの型・必須・重複・形式チェックを実行します。"
+      />
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">ジョブ情報</CardTitle>
-          <CardDescription className="font-mono text-xs">{jobId}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <StatGrid
+        items={[
+          { label: "ジョブID", value: <span className="font-mono text-xs">{jobId}</span> },
+          { label: "チェック内容", value: "Type / Required", hint: "重複・形式も含む" },
+        ]}
+      />
+
+      <SectionCard title="実行" description="マッピング済みデータに対してバリデーションを行います。">
+        <div className="space-y-4">
           <Button
             onClick={() =>
               mutation.mutate(undefined, {
@@ -52,19 +50,19 @@ export default function JobValidatePage() {
           </Button>
 
           {mutation.isSuccess && (
-            <div className={`flex items-center gap-3 rounded-lg px-4 py-3 ${
+            <div className={`flex items-center gap-3 rounded-xl border px-4 py-4 ${
               mutation.data.error_count === 0
-                ? "bg-green-50 border border-green-200"
-                : "bg-amber-50 border border-amber-200"
+                ? "border-[rgba(74,222,128,0.16)] bg-[rgba(74,222,128,0.12)]"
+                : "border-[rgba(251,191,36,0.16)] bg-[rgba(251,191,36,0.12)]"
             }`}>
               {mutation.data.error_count === 0 ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-[#4ade80]" />
               ) : (
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <AlertTriangle className="h-5 w-5 text-[#fbbf24]" />
               )}
               <div>
                 <p className={`text-sm font-medium ${
-                  mutation.data.error_count === 0 ? "text-green-800" : "text-amber-800"
+                  mutation.data.error_count === 0 ? "text-[#4ade80]" : "text-[#fbbf24]"
                 }`}>
                   {mutation.data.error_count === 0
                     ? "バリデーション成功"
@@ -73,7 +71,7 @@ export default function JobValidatePage() {
                 {mutation.data.error_count > 0 && (
                   <Link
                     to={`/jobs/${jobId}/errors`}
-                    className="text-xs text-amber-700 hover:text-amber-900 underline"
+                    className="text-xs text-[#fbbf24] underline hover:text-foreground"
                   >
                     エラー詳細を確認
                   </Link>
@@ -81,8 +79,8 @@ export default function JobValidatePage() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </SectionCard>
+    </PageContainer>
   );
 }

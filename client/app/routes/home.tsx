@@ -4,6 +4,8 @@ import { useJobList } from "~/features/import-job/hooks/use-job-list";
 import { JobTable } from "~/widgets/job-table/job-table";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { EmptyState } from "~/shared/ui/empty-state";
+import { PageContainer, PageHeader, Pagination, StatGrid } from "~/shared/ui/page";
+import { SectionCard } from "~/shared/ui/section-card";
 import { Button } from "~/components/ui/button";
 import {
   Select,
@@ -12,8 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Card, CardContent } from "~/components/ui/card";
-import { Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload } from "lucide-react";
 
 export function meta() {
   return [{ title: "DataBridge - ダッシュボード" }];
@@ -36,47 +37,57 @@ export default function Home() {
 
   const jobs = data?.data ?? [];
   const meta = data?.meta;
+  const completedCount = jobs.filter((job) => job.status === "completed").length;
+  const failedCount = jobs.filter((job) => job.status === "failed").length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">ジョブ一覧</h1>
-          <p className="mt-1 text-sm text-gray-500">取り込みジョブの状況を確認できます</p>
-        </div>
-        <Link to="/jobs/upload">
-          <Button className="gap-2">
+    <PageContainer className="mx-auto max-w-6xl">
+      <PageHeader
+        eyebrow="Dashboard"
+        title="Import ジョブ一覧"
+        description="取り込みジョブの進行状況、件数、失敗有無を高密度に確認できます。"
+        actions={
+          <Link to="/jobs/upload">
+            <Button size="lg" className="gap-2">
             <Upload className="h-4 w-4" />
             ファイルアップロード
-          </Button>
-        </Link>
-      </div>
+            </Button>
+          </Link>
+        }
+      />
 
-      <Card className="shadow-sm">
-        <CardContent className="py-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-600">ステータス:</span>
-            <Select
-              value={status}
-              onValueChange={(v) => { setStatus(v); setPage(1); }}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {meta && (
-              <span className="ml-auto text-sm text-gray-400">全 {meta.total} 件</span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StatGrid
+        items={[
+          { label: "表示件数", value: jobs.length, hint: meta ? `総件数 ${meta.total}` : "ジョブ一覧" },
+          { label: "完了", value: completedCount, hint: "このページ上の集計" },
+          { label: "失敗", value: failedCount, hint: "要再実行の候補" },
+          { label: "フィルタ", value: STATUS_OPTIONS.find((opt) => opt.value === status)?.label ?? "全ステータス" },
+        ]}
+      />
+
+      <SectionCard title="フィルタ" description="ステータス単位でジョブを絞り込みます。">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <span className="text-sm font-medium text-muted-foreground">ステータス</span>
+          <Select
+            value={status}
+            onValueChange={(v) => { setStatus(v); setPage(1); }}
+          >
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {meta && (
+            <span className="text-sm text-muted-foreground sm:ml-auto">全 {meta.total} 件</span>
+          )}
+        </div>
+      </SectionCard>
 
       {isLoading && (
         <div className="flex justify-center py-12">
@@ -87,38 +98,21 @@ export default function Home() {
         <EmptyState title="ジョブがありません" description="ファイルをアップロードして開始してください" />
       )}
       {jobs.length > 0 && (
-        <Card className="shadow-sm overflow-hidden">
+        <SectionCard title="ジョブ一覧" description="ファイル単位の進行状況とメタデータを表示します。">
           <JobTable jobs={jobs} />
-        </Card>
+        </SectionCard>
       )}
 
       {meta && meta.total > meta.per_page && (
-        <div className="flex items-center justify-center gap-3 text-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="gap-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            前へ
-          </Button>
-          <span className="text-gray-600 tabular-nums">
-            {page} / {Math.ceil(meta.total / meta.per_page)} ページ
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page * meta.per_page >= meta.total}
-            className="gap-1"
-          >
-            次へ
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={Math.ceil(meta.total / meta.per_page)}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => p + 1)}
+          disablePrev={page === 1}
+          disableNext={page * meta.per_page >= meta.total}
+        />
       )}
-    </div>
+    </PageContainer>
   );
 }

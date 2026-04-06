@@ -34,7 +34,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
   });
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -43,7 +43,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                 <TableHead
                   key={header.id}
                   onClick={header.column.getToggleSortingHandler()}
-                  className={header.column.getCanSort() ? "cursor-pointer" : ""}
+                  className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
                 >
                   {header.isPlaceholder
                     ? null
@@ -70,7 +70,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="text-center h-24">
-                データがありません
+                <span className="text-muted-foreground">データがありません</span>
               </TableCell>
             </TableRow>
           )}

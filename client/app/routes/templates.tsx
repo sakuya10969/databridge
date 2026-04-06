@@ -5,6 +5,8 @@ import { useTemplates, useCreateTemplate } from "~/features/template/hooks/use-t
 import { DataTable } from "~/shared/ui/data-table";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
 import { EmptyState } from "~/shared/ui/empty-state";
+import { PageContainer, PageHeader } from "~/shared/ui/page";
+import { SectionCard } from "~/shared/ui/section-card";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -19,7 +21,7 @@ const columns: ColumnDef<Template, unknown>[] = [
     accessorKey: "name",
     header: "テンプレート名",
     cell: ({ row }) => (
-      <Link to={`/templates/${row.original.id}`} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+      <Link to={`/templates/${row.original.id}`} className="font-medium text-[#4d83fd] hover:text-foreground">
         {row.original.name}
       </Link>
     ),
@@ -42,28 +44,24 @@ export default function TemplatesPage() {
   const templates = data?.data ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Importテンプレート</h1>
-          <p className="mt-1 text-sm text-gray-500">列マッピング・バリデーション設定の再利用テンプレート</p>
-        </div>
-        <Button
-          variant={showForm ? "outline" : "default"}
-          onClick={() => setShowForm(!showForm)}
-          className="gap-2"
-        >
-          {showForm ? <><X className="h-4 w-4" />キャンセル</> : <><Plus className="h-4 w-4" />テンプレート作成</>}
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Import Templates"
+        title="Importテンプレート"
+        description="列マッピング・バリデーション設定の再利用テンプレートを管理します。"
+        actions={
+          <Button
+            variant={showForm ? "outline" : "default"}
+            onClick={() => setShowForm(!showForm)}
+            className="gap-2"
+          >
+            {showForm ? <><X className="h-4 w-4" />キャンセル</> : <><Plus className="h-4 w-4" />テンプレート作成</>}
+          </Button>
+        }
+      />
 
       {showForm && (
-        <Card className="shadow-sm border-blue-100 bg-blue-50/30">
-          <CardHeader>
-            <CardTitle className="text-base">テンプレート作成</CardTitle>
-            <CardDescription>新しいImportテンプレートを作成します</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <SectionCard title="テンプレート作成" description="新しい Import テンプレートを作成します。">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -114,8 +112,7 @@ export default function TemplatesPage() {
                 {createMutation.isPending ? "作成中..." : "作成"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+        </SectionCard>
       )}
 
       {isLoading && (
@@ -125,10 +122,10 @@ export default function TemplatesPage() {
         <EmptyState title="テンプレートがありません" description="テンプレートを作成してください" />
       )}
       {templates.length > 0 && (
-        <Card className="shadow-sm overflow-hidden">
+        <SectionCard title="テンプレート一覧" description="既存の Import テンプレートです。">
           <DataTable columns={columns} data={templates} />
-        </Card>
+        </SectionCard>
       )}
-    </div>
+    </PageContainer>
   );
 }

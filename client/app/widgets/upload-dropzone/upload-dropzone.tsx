@@ -57,52 +57,52 @@ export function UploadDropzone({ onUpload, isUploading }: UploadDropzoneProps) {
     <div className="space-y-4">
       <div
         {...getRootProps()}
-        className={`relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
+        className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200 ${
           isDragActive
-            ? "border-blue-500 bg-blue-50/80 scale-[1.01]"
-            : "border-gray-200 hover:border-blue-400 hover:bg-gray-50/50 bg-white"
+            ? "scale-[1.01] border-primary bg-[rgba(38,101,253,0.12)]"
+            : "border-border bg-[rgba(11,19,38,0.56)] hover:border-[#4d83fd] hover:bg-[rgba(21,32,64,0.82)]"
         } ${isUploading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-3">
-          <div className={`rounded-full p-4 transition-colors ${isDragActive ? "bg-blue-100" : "bg-gray-100"}`}>
-            <Upload className={`h-8 w-8 ${isDragActive ? "text-blue-600" : "text-gray-400"}`} />
+          <div className={`rounded-full border p-4 transition-colors ${isDragActive ? "border-[rgba(77,131,253,0.32)] bg-[rgba(38,101,253,0.16)]" : "border-border bg-[rgba(17,27,51,0.88)]"}`}>
+            <Upload className={`h-8 w-8 ${isDragActive ? "text-[#4d83fd]" : "text-muted-foreground"}`} />
           </div>
           <div>
-            <p className="text-base font-semibold text-gray-700">
+            <p className="text-base font-semibold text-foreground">
               {isDragActive ? "ここにドロップ" : "ファイルをドラッグ&ドロップ"}
             </p>
-            <p className="mt-1 text-sm text-gray-500">または クリックしてファイルを選択</p>
+            <p className="mt-1 text-sm text-muted-foreground">またはクリックしてファイルを選択</p>
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             CSV, XLSX 対応 / 最大 {formatFileSize(MAX_SIZE)}
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+        <div className="rounded-xl border border-[rgba(255,180,171,0.16)] bg-[rgba(255,180,171,0.12)] px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       {selectedFile && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-[rgba(17,27,51,0.82)] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+              <div className="rounded-lg border border-[rgba(77,131,253,0.2)] bg-[rgba(38,101,253,0.12)] p-2">
+                <FileSpreadsheet className="h-5 w-5 text-[#4d83fd]" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
-                <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={handleRemove}
               disabled={isUploading}
-              className="rounded-md p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
             >
               <X className="h-4 w-4" />
             </button>

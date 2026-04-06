@@ -6,16 +6,17 @@ import { runImport } from "~/features/import-job/api/run-import";
 import { retryJob } from "~/features/import-job/api/retry-job";
 import { JobStatusBadge } from "~/widgets/job-status-badge/job-status-badge";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
+import { BackLink, InfoList, PageContainer, PageHeader } from "~/shared/ui/page";
+import { SectionCard } from "~/shared/ui/section-card";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { formatDate } from "~/shared/utils/format-date";
 import { formatFileSize } from "~/shared/utils/format-file-size";
 import {
-  ArrowLeft,
   FileSpreadsheet,
   User,
   Calendar,
   AlertCircle,
+  ChevronLeft,
   Rows3,
   Play,
   RotateCcw,
@@ -58,11 +59,11 @@ export default function JobDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-12 w-12 text-gray-300 mb-4" />
-        <p className="text-lg font-medium text-gray-700">ジョブが見つかりません</p>
-        <p className="mt-1 text-sm text-gray-500">指定されたジョブは存在しないか、削除された可能性があります</p>
+        <p className="text-lg font-medium text-foreground">ジョブが見つかりません</p>
+        <p className="mt-1 text-sm text-muted-foreground">指定されたジョブは存在しないか、削除された可能性があります</p>
         <Link to="/" className="mt-4">
           <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
             ジョブ一覧に戻る
           </Button>
         </Link>
@@ -82,49 +83,27 @@ export default function JobDetailPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link to="/">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="h-4 w-4" />
-            戻る
-          </Button>
-        </Link>
-      </div>
+    <PageContainer className="max-w-5xl">
+      <BackLink to="/">ジョブ一覧に戻る</BackLink>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">ジョブ詳細</h1>
-          <p className="mt-1 text-sm text-gray-500 font-mono">{jobId}</p>
-        </div>
-        <JobStatusBadge status={job.status} />
-      </div>
+      <PageHeader
+        eyebrow="Import Job"
+        title="ジョブ詳細"
+        description={jobId}
+        actions={<JobStatusBadge status={job.status} />}
+      />
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base">ジョブ情報</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {infoItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-md bg-gray-50 p-2">
-                    <Icon className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div>
-                    <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{item.label}</dt>
-                    <dd className="mt-0.5 text-sm font-medium text-gray-900">{item.value}</dd>
-                  </div>
-                </div>
-              );
-            })}
-          </dl>
-        </CardContent>
-      </Card>
+      <SectionCard title="ジョブ情報" description="ファイル、操作者、件数、更新日時などの詳細です。">
+        <InfoList
+          items={infoItems.map((item) => ({
+            label: item.label,
+            value: item.value,
+          }))}
+        />
+      </SectionCard>
 
-      <div className="flex flex-wrap gap-3">
+      <SectionCard title="ジョブアクション" description="現在のステータスに応じて実行可能な操作を表示します。">
+        <div className="flex flex-wrap gap-3">
         {(job.status === "uploaded" || job.status === "parsing") && (
           <Link to={`/jobs/${jobId}/mapping`}>
             <Button variant="outline" className="gap-2">
@@ -162,7 +141,8 @@ export default function JobDetailPage() {
             </Button>
           </Link>
         )}
-      </div>
-    </div>
+        </div>
+      </SectionCard>
+    </PageContainer>
   );
 }

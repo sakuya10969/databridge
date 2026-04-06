@@ -6,11 +6,11 @@ import { generateReport, retryReportJob } from "~/features/report-job/api/report
 import { JobStatusBadge } from "~/widgets/job-status-badge/job-status-badge";
 import { ReportDownloadButton } from "~/widgets/report-download-button/report-download-button";
 import { LoadingSpinner } from "~/shared/ui/loading-spinner";
+import { BackLink, InfoList, PageContainer, PageHeader } from "~/shared/ui/page";
+import { SectionCard } from "~/shared/ui/section-card";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { formatDate } from "~/shared/utils/format-date";
 import {
-  ArrowLeft,
   Play,
   RotateCcw,
   FileOutput,
@@ -55,10 +55,10 @@ export default function ReportJobDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-12 w-12 text-gray-300 mb-4" />
-        <p className="text-lg font-medium text-gray-700">ジョブが見つかりません</p>
+        <p className="text-lg font-medium text-foreground">ジョブが見つかりません</p>
         <Link to="/report-jobs" className="mt-4">
           <Button variant="outline" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
             一覧に戻る
           </Button>
         </Link>
@@ -83,58 +83,37 @@ export default function ReportJobDetailPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link to="/report-jobs">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="h-4 w-4" />
-            一覧に戻る
-          </Button>
-        </Link>
-      </div>
+    <PageContainer className="max-w-5xl">
+      <BackLink to="/report-jobs">一覧に戻る</BackLink>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">帳票出力ジョブ詳細</h1>
-          <p className="mt-1 text-sm text-gray-500 font-mono">{jobId}</p>
-        </div>
-        <JobStatusBadge status={job.status} />
-      </div>
+      <PageHeader
+        eyebrow="Report Job"
+        title="帳票出力ジョブ詳細"
+        description={jobId}
+        actions={<JobStatusBadge status={job.status} />}
+      />
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base">ジョブ情報</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {infoItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-md bg-gray-50 p-2">
-                    <Icon className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div>
-                    <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{item.label}</dt>
-                    <dd className={`mt-0.5 text-sm font-medium text-gray-900 ${item.mono ? "font-mono text-xs" : ""}`}>
-                      {item.value}
-                    </dd>
-                  </div>
-                </div>
-              );
-            })}
-          </dl>
+      <SectionCard title="ジョブ情報" description="テンプレート、出力形式、件数、実行日時を表示します。">
+        <div className="space-y-5">
+          <InfoList
+            items={infoItems.map((item) => ({
+              label: item.label,
+              value: item.value,
+              mono: item.mono,
+            }))}
+          />
 
           {job.error_message && (
-            <div className="mt-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-              <p className="text-xs font-medium text-red-600 uppercase tracking-wide mb-1">エラー</p>
-              <p className="text-sm text-red-800">{job.error_message}</p>
+            <div className="rounded-xl border border-[rgba(255,180,171,0.16)] bg-[rgba(255,180,171,0.12)] px-4 py-4">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-destructive">エラー</p>
+              <p className="text-sm text-destructive">{job.error_message}</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
-      <div className="flex flex-wrap gap-3">
+      <SectionCard title="ジョブアクション" description="ステータスに応じて帳票生成、再実行、ダウンロードが可能です。">
+        <div className="flex flex-wrap gap-3">
         {job.status === "pending" && (
           <Button
             onClick={() => generateMutation.mutate()}
@@ -157,7 +136,8 @@ export default function ReportJobDetailPage() {
             {retryMutation.isPending ? "再実行中..." : "再実行"}
           </Button>
         )}
-      </div>
-    </div>
+        </div>
+      </SectionCard>
+    </PageContainer>
   );
 }

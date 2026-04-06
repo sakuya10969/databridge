@@ -21,3 +21,14 @@ export interface ImportJob {
   created_at: string;
   updated_at: string;
 }
+
+export interface ParseResult {
+  columns: string[];
+  total_rows: number;
+  sheet_names: string[];
+}
+
+export interface PreviewData {
+  columns: string[];
+  rows: Record<string, string>[];
+}

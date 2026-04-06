@@ -12,7 +12,7 @@ const columns: ColumnDef<ReportJob, unknown>[] = [
     cell: ({ row }) => (
       <Link
         to={`/report-jobs/${row.original.id}`}
-        className="font-mono text-xs text-blue-600 hover:underline"
+        className="font-mono text-xs text-[#4d83fd] hover:text-foreground"
       >
         {row.original.id.slice(0, 8)}...
       </Link>

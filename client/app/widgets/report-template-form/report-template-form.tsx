@@ -48,23 +48,23 @@ export function ReportTemplateForm({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
+      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
             <Label htmlFor="rt-name">テンプレート名</Label>
             <Input
               id="rt-name"
               {...methods.register("name", { required: true })}
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label htmlFor="rt-resource">ターゲットリソース</Label>
             <Input
               id="rt-resource"
               {...methods.register("target_resource_type")}
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label>帳票種別</Label>
             <Controller
               control={methods.control}
@@ -83,7 +83,7 @@ export function ReportTemplateForm({
               )}
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label>デフォルト出力形式</Label>
             <Controller
               control={methods.control}
@@ -102,7 +102,7 @@ export function ReportTemplateForm({
               )}
             />
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="rt-desc">説明</Label>
             <Input
               id="rt-desc"
@@ -113,7 +113,7 @@ export function ReportTemplateForm({
 
         <ReportFieldEditor />
 
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="min-w-40">
           {isSubmitting ? "保存中..." : "保存"}
         </Button>
       </form>

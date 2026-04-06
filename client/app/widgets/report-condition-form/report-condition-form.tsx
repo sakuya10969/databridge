@@ -37,8 +37,8 @@ export function ReportConditionForm({ isSubmitting, onSubmit }: ReportConditionF
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-1">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div className="space-y-2">
         <Label>出力形式</Label>
         <Controller
           control={control}
@@ -58,18 +58,18 @@ export function ReportConditionForm({ isSubmitting, onSubmit }: ReportConditionF
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-2">
         <Label htmlFor="requested_by">依頼者</Label>
         <Input
           id="requested_by"
           {...register("requested_by", { required: "依頼者を入力してください" })}
         />
         {errors.requested_by && (
-          <p className="text-destructive text-xs">{errors.requested_by.message}</p>
+          <p className="text-xs text-destructive">{errors.requested_by.message}</p>
         )}
       </div>
 
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" disabled={isSubmitting} className="min-w-40">
         {isSubmitting ? "作成中..." : "ジョブ作成"}
       </Button>
     </form>

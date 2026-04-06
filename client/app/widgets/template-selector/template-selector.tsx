@@ -14,13 +14,18 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({ value, onChange }: TemplateSelectorProps) {
   return (
-    <div className="flex items-center gap-3">
-      <Label>テンプレート:</Label>
+    <div className="rounded-xl border border-[#162038] bg-[rgba(11,19,38,0.56)] px-4 py-4">
+      <div className="mb-3">
+        <Label>テンプレート</Label>
+        <p className="mt-2 text-sm text-muted-foreground">
+          保存済みの Import テンプレートが利用できる場合はここで選択します。
+        </p>
+      </div>
       <Select
         value={value ?? "none"}
         onValueChange={(v) => onChange(v === "none" ? undefined : v)}
       >
-        <SelectTrigger className="w-48">
+        <SelectTrigger className="w-full max-w-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

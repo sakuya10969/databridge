@@ -11,7 +11,7 @@ const columns: ColumnDef<ImportJob, unknown>[] = [
     accessorKey: "file_name",
     header: "ファイル名",
     cell: ({ row }) => (
-      <Link to={`/jobs/${row.original.id}`} className="text-blue-600 hover:underline">
+      <Link to={`/jobs/${row.original.id}`} className="font-medium text-[#4d83fd] hover:text-foreground">
         {row.original.file_name}
       </Link>
     ),
@@ -26,7 +26,11 @@ const columns: ColumnDef<ImportJob, unknown>[] = [
     header: "サイズ",
     cell: ({ getValue }) => formatFileSize(getValue() as number),
   },
-  { accessorKey: "total_rows", header: "行数" },
+  {
+    accessorKey: "total_rows",
+    header: "行数",
+    cell: ({ getValue }) => getValue() ?? "-",
+  },
   { accessorKey: "operator", header: "操作者" },
   {
     accessorKey: "created_at",

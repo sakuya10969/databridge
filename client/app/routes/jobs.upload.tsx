@@ -3,9 +3,10 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useFileUpload } from "~/features/upload/hooks/use-file-upload";
 import { UploadDropzone } from "~/widgets/upload-dropzone/upload-dropzone";
+import { PageContainer, PageHeader, StatGrid } from "~/shared/ui/page";
+import { SectionCard } from "~/shared/ui/section-card";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 
 export default function JobsUploadPage() {
   const navigate = useNavigate();
@@ -17,18 +18,23 @@ export default function JobsUploadPage() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">ファイルアップロード</h1>
-        <p className="mt-1 text-sm text-gray-500">CSV または Excel ファイルを取り込みます</p>
-      </div>
+    <PageContainer className="mx-auto max-w-3xl">
+      <PageHeader
+        eyebrow="Import"
+        title="ファイルアップロード"
+        description="CSV または Excel ファイルをアップロードして、取り込みジョブを開始します。"
+      />
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">アップロード設定</CardTitle>
-          <CardDescription>操作者名を入力し、ファイルを選択してください</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
+      <StatGrid
+        items={[
+          { label: "対応形式", value: "CSV / XLSX", hint: "業務ファイル対応" },
+          { label: "最大サイズ", value: "50MB", hint: "MVP 制限" },
+          { label: "処理フロー", value: "Upload → Parse", hint: "次画面でマッピング設定" },
+        ]}
+      />
+
+      <SectionCard title="アップロード設定" description="操作者名を入力し、対象ファイルを選択してください。">
+        <div className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="operator">操作者名</Label>
             <Input
@@ -46,12 +52,12 @@ export default function JobsUploadPage() {
           />
 
           {upload.isError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+            <div className="rounded-xl border border-[rgba(255,180,171,0.16)] bg-[rgba(255,180,171,0.12)] px-4 py-3 text-sm text-destructive">
               {String(upload.error)}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </SectionCard>
+    </PageContainer>
   );
 }

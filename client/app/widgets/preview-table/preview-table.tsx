@@ -37,15 +37,19 @@ export function PreviewTable({ columns, rows }: PreviewTableProps) {
   });
 
   return (
-    <div ref={parentRef} className="overflow-auto border rounded-md" style={{ maxHeight: 400 }}>
+    <div
+      ref={parentRef}
+      className="overflow-auto rounded-xl border border-border bg-[rgba(11,19,38,0.56)]"
+      style={{ maxHeight: 400 }}
+    >
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 sticky top-0">
+        <thead className="sticky top-0 bg-[#0d1730]">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((h) => (
                 <th
                   key={h.id}
-                  className="px-3 py-2 text-left font-medium text-gray-600 border-b whitespace-nowrap"
+                  className="border-b border-border px-4 py-3 text-left text-[11px] font-medium uppercase tracking-[0.06em] whitespace-nowrap text-muted-foreground"
                 >
                   {flexRender(h.column.columnDef.header, h.getContext())}
                 </th>
@@ -60,10 +64,10 @@ export function PreviewTable({ columns, rows }: PreviewTableProps) {
               <tr
                 key={row.id}
                 style={{ transform: `translateY(${virtualRow.start}px)` }}
-                className="absolute w-full border-b hover:bg-gray-50"
+                className="absolute w-full border-b border-[#162038] hover:bg-[rgba(38,101,253,0.06)]"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                  <td key={cell.id} className="px-4 py-3 text-[13px] text-foreground whitespace-nowrap">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

@@ -1,4 +1,5 @@
 import { useFieldArray, useFormContext, Controller } from "react-hook-form";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -23,7 +24,10 @@ export function ReportFieldEditor() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">フィールド定義</h3>
+        <div>
+          <h3 className="text-sm font-medium text-foreground">フィールド定義</h3>
+          <p className="mt-1 text-xs text-muted-foreground">帳票出力に含めるフィールドと型を定義します。</p>
+        </div>
         <Button
           type="button"
           variant="outline"
@@ -37,53 +41,57 @@ export function ReportFieldEditor() {
               is_required: true,
             })
           }
+          className="gap-2"
         >
+          <Plus className="h-3.5 w-3.5" />
           フィールド追加
         </Button>
       </div>
 
       {fields.length === 0 && (
-        <p className="text-sm text-muted-foreground">フィールドがありません</p>
+        <p className="rounded-xl border border-dashed border-border bg-[rgba(11,19,38,0.56)] px-4 py-6 text-sm text-muted-foreground">
+          フィールドがありません
+        </p>
       )}
 
       {fields.map((field, index) => (
-        <Card key={field.id}>
-          <CardContent className="pt-4 space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
+        <Card key={field.id} className="bg-[rgba(17,27,51,0.82)]">
+          <CardContent className="space-y-4 pt-1">
+            <div className="grid gap-3 lg:grid-cols-3">
+              <div className="space-y-2">
                 <Label className="text-xs">フィールドキー</Label>
                 <Input
                   {...register(`fields.${index}.field_key`)}
                   placeholder="field_key"
-                  className="h-7 text-xs"
+                  className="h-9 text-xs"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label className="text-xs">ラベル</Label>
                 <Input
                   {...register(`fields.${index}.label`)}
                   placeholder="表示名"
-                  className="h-7 text-xs"
+                  className="h-9 text-xs"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label className="text-xs">ソースパス</Label>
                 <Input
                   {...register(`fields.${index}.source_path`)}
                   placeholder="column_name"
-                  className="h-7 text-xs"
+                  className="h-9 text-xs"
                 />
               </div>
             </div>
-            <div className="flex items-end gap-4">
-              <div className="space-y-1">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="space-y-2">
                 <Label className="text-xs">書式タイプ</Label>
                 <Controller
                   control={control}
                   name={`fields.${index}.format_type`}
                   render={({ field: f }) => (
                     <Select value={f.value} onValueChange={f.onChange}>
-                      <SelectTrigger className="h-7 w-36 text-xs">
+                      <SelectTrigger size="sm" className="w-40 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -111,11 +119,12 @@ export function ReportFieldEditor() {
               </div>
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={() => remove(index)}
-                className="text-destructive hover:text-destructive ml-auto"
+                className="ml-auto gap-2"
               >
+                <Trash2 className="h-3.5 w-3.5" />
                 削除
               </Button>
             </div>
