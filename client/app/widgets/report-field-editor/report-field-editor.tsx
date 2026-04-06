@@ -49,13 +49,13 @@ export function ReportFieldEditor() {
       </div>
 
       {fields.length === 0 && (
-        <p className="rounded-xl border border-dashed border-border bg-[rgba(11,19,38,0.56)] px-4 py-6 text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border bg-muted px-4 py-6 text-sm text-muted-foreground">
           フィールドがありません
         </p>
       )}
 
       {fields.map((field, index) => (
-        <Card key={field.id} className="bg-[rgba(17,27,51,0.82)]">
+        <Card key={field.id}>
           <CardContent className="space-y-4 pt-1">
             <div className="grid gap-3 lg:grid-cols-3">
               <div className="space-y-2">

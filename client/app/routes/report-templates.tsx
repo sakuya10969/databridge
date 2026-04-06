@@ -17,7 +17,7 @@ const columns: ColumnDef<ReportTemplate, unknown>[] = [
     accessorKey: "name",
     header: "テンプレート名",
     cell: ({ row }) => (
-      <Link to={`/report-templates/${row.original.id}`} className="font-medium text-[#4d83fd] hover:text-foreground">
+      <Link to={`/report-templates/${row.original.id}`} className="font-medium text-primary hover:underline">
         {row.original.name}
       </Link>
     ),

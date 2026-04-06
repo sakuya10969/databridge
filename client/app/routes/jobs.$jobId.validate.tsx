@@ -52,17 +52,17 @@ export default function JobValidatePage() {
           {mutation.isSuccess && (
             <div className={`flex items-center gap-3 rounded-xl border px-4 py-4 ${
               mutation.data.error_count === 0
-                ? "border-[rgba(74,222,128,0.16)] bg-[rgba(74,222,128,0.12)]"
-                : "border-[rgba(251,191,36,0.16)] bg-[rgba(251,191,36,0.12)]"
+                ? "border-[#16a34a]/20 bg-[#f0fdf4]"
+                : "border-[#d97706]/20 bg-[#fffbeb]"
             }`}>
               {mutation.data.error_count === 0 ? (
-                <CheckCircle2 className="h-5 w-5 text-[#4ade80]" />
+                <CheckCircle2 className="h-5 w-5 text-[#16a34a]" />
               ) : (
-                <AlertTriangle className="h-5 w-5 text-[#fbbf24]" />
+                <AlertTriangle className="h-5 w-5 text-[#d97706]" />
               )}
               <div>
                 <p className={`text-sm font-medium ${
-                  mutation.data.error_count === 0 ? "text-[#4ade80]" : "text-[#fbbf24]"
+                  mutation.data.error_count === 0 ? "text-[#16a34a]" : "text-[#d97706]"
                 }`}>
                   {mutation.data.error_count === 0
                     ? "バリデーション成功"
@@ -71,7 +71,7 @@ export default function JobValidatePage() {
                 {mutation.data.error_count > 0 && (
                   <Link
                     to={`/jobs/${jobId}/errors`}
-                    className="text-xs text-[#fbbf24] underline hover:text-foreground"
+                    className="text-xs text-[#d97706] underline hover:text-foreground"
                   >
                     エラー詳細を確認
                   </Link>

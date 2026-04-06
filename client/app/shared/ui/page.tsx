@@ -44,10 +44,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-[linear-gradient(135deg,rgba(21,32,64,0.96),rgba(11,19,38,0.94))] px-6 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.3)] lg:flex-row lg:items-end lg:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card px-6 py-6 shadow-sm lg:flex-row lg:items-end lg:justify-between">
       <div className="space-y-2">
         {eyebrow ? (
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#4d83fd]">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
             {eyebrow}
           </p>
         ) : null}
@@ -67,7 +67,7 @@ export function StatGrid({
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => (
-        <Card key={item.label} size="sm" className="gap-2 bg-[rgba(17,27,51,0.88)]">
+        <Card key={item.label} size="sm" className="gap-2">
           <div className="px-4">
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {item.label}
@@ -113,7 +113,7 @@ export function InfoList({
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-xl border border-[#162038] bg-[rgba(11,19,38,0.56)] px-4 py-4"
+          className="rounded-xl border border-border bg-muted px-4 py-4"
         >
           <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
             {item.label}

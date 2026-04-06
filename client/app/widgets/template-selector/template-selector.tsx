@@ -14,7 +14,7 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({ value, onChange }: TemplateSelectorProps) {
   return (
-    <div className="rounded-xl border border-[#162038] bg-[rgba(11,19,38,0.56)] px-4 py-4">
+    <div className="rounded-xl border border-border bg-muted px-4 py-4">
       <div className="mb-3">
         <Label>テンプレート</Label>
         <p className="mt-2 text-sm text-muted-foreground">

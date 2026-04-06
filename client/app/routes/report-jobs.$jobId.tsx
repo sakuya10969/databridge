@@ -104,7 +104,7 @@ export default function ReportJobDetailPage() {
           />
 
           {job.error_message && (
-            <div className="rounded-xl border border-[rgba(255,180,171,0.16)] bg-[rgba(255,180,171,0.12)] px-4 py-4">
+            <div className="rounded-xl border border-destructive/20 bg-[#fef2f2] px-4 py-4">
               <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-destructive">エラー</p>
               <p className="text-sm text-destructive">{job.error_message}</p>
             </div>

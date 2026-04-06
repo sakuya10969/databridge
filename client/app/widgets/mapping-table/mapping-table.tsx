@@ -54,7 +54,7 @@ export function MappingTable({ sourceColumns, onSave, isSaving }: MappingTablePr
 
   return (
     <form onSubmit={handleSubmit((data) => onSave(data.mappings))} className="space-y-5">
-      <div className="rounded-xl border border-border bg-[rgba(11,19,38,0.56)]">
+      <div className="rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

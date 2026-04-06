@@ -11,7 +11,7 @@ const columns: ColumnDef<ImportJob, unknown>[] = [
     accessorKey: "file_name",
     header: "ファイル名",
     cell: ({ row }) => (
-      <Link to={`/jobs/${row.original.id}`} className="font-medium text-[#4d83fd] hover:text-foreground">
+      <Link to={`/jobs/${row.original.id}`} className="font-medium text-primary hover:underline">
         {row.original.file_name}
       </Link>
     ),

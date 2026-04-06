@@ -21,7 +21,7 @@ const columns: ColumnDef<Template, unknown>[] = [
     accessorKey: "name",
     header: "テンプレート名",
     cell: ({ row }) => (
-      <Link to={`/templates/${row.original.id}`} className="font-medium text-[#4d83fd] hover:text-foreground">
+      <Link to={`/templates/${row.original.id}`} className="font-medium text-primary hover:underline">
         {row.original.name}
       </Link>
     ),

@@ -52,7 +52,7 @@ export default function JobsUploadPage() {
           />
 
           {upload.isError && (
-            <div className="rounded-xl border border-[rgba(255,180,171,0.16)] bg-[rgba(255,180,171,0.12)] px-4 py-3 text-sm text-destructive">
+            <div className="rounded-lg border border-destructive/20 bg-[#fef2f2] px-4 py-3 text-sm text-destructive">
               {String(upload.error)}
             </div>
           )}

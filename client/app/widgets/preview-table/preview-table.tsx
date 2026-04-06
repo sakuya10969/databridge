@@ -39,11 +39,11 @@ export function PreviewTable({ columns, rows }: PreviewTableProps) {
   return (
     <div
       ref={parentRef}
-      className="overflow-auto rounded-xl border border-border bg-[rgba(11,19,38,0.56)]"
+      className="overflow-auto rounded-xl border border-border bg-card"
       style={{ maxHeight: 400 }}
     >
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-[#0d1730]">
+        <thead className="sticky top-0 bg-muted">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((h) => (
@@ -64,7 +64,7 @@ export function PreviewTable({ columns, rows }: PreviewTableProps) {
               <tr
                 key={row.id}
                 style={{ transform: `translateY(${virtualRow.start}px)` }}
-                className="absolute w-full border-b border-[#162038] hover:bg-[rgba(38,101,253,0.06)]"
+                className="absolute w-full border-b border-border hover:bg-[rgba(38,101,253,0.04)]"
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="px-4 py-3 text-[13px] text-foreground whitespace-nowrap">

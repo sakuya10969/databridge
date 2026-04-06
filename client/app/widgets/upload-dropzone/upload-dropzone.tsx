@@ -57,16 +57,16 @@ export function UploadDropzone({ onUpload, isUploading }: UploadDropzoneProps) {
     <div className="space-y-4">
       <div
         {...getRootProps()}
-        className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200 ${
+        className={`relative cursor-pointer rounded-xl border-2 border-dashed p-10 text-center transition-all duration-200 ${
           isDragActive
-            ? "scale-[1.01] border-primary bg-[rgba(38,101,253,0.12)]"
-            : "border-border bg-[rgba(11,19,38,0.56)] hover:border-[#4d83fd] hover:bg-[rgba(21,32,64,0.82)]"
+            ? "scale-[1.01] border-primary bg-[rgba(38,101,253,0.06)]"
+            : "border-border bg-muted hover:border-primary/40 hover:bg-[rgba(38,101,253,0.04)]"
         } ${isUploading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-3">
-          <div className={`rounded-full border p-4 transition-colors ${isDragActive ? "border-[rgba(77,131,253,0.32)] bg-[rgba(38,101,253,0.16)]" : "border-border bg-[rgba(17,27,51,0.88)]"}`}>
-            <Upload className={`h-8 w-8 ${isDragActive ? "text-[#4d83fd]" : "text-muted-foreground"}`} />
+          <div className={`rounded-full p-4 transition-colors ${isDragActive ? "bg-[rgba(38,101,253,0.1)]" : "bg-card border border-border"}`}>
+            <Upload className={`h-8 w-8 ${isDragActive ? "text-primary" : "text-muted-foreground"}`} />
           </div>
           <div>
             <p className="text-base font-semibold text-foreground">
@@ -81,17 +81,17 @@ export function UploadDropzone({ onUpload, isUploading }: UploadDropzoneProps) {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-[rgba(255,180,171,0.16)] bg-[rgba(255,180,171,0.12)] px-4 py-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/20 bg-[#fef2f2] px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       {selectedFile && (
-        <div className="rounded-xl border border-border bg-[rgba(17,27,51,0.82)] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg border border-[rgba(77,131,253,0.2)] bg-[rgba(38,101,253,0.12)] p-2">
-                <FileSpreadsheet className="h-5 w-5 text-[#4d83fd]" />
+              <div className="rounded-lg bg-[rgba(38,101,253,0.08)] p-2">
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
@@ -102,17 +102,13 @@ export function UploadDropzone({ onUpload, isUploading }: UploadDropzoneProps) {
               type="button"
               onClick={handleRemove}
               disabled={isUploading}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
           <div className="mt-4">
-            <Button
-              onClick={handleUpload}
-              disabled={isUploading}
-              className="w-full"
-            >
+            <Button onClick={handleUpload} disabled={isUploading} className="w-full">
               {isUploading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
